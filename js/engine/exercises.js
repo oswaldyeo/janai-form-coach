@@ -218,12 +218,190 @@ const shoulderPress = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// GOBLET SQUAT — side-on. Mechanically a loaded squat: reuse the squat driver
+// (knee, hip-knee-ankle) and its calibration/progress verbatim; only the coach
+// cue changes (goblet keeps the torso more upright). peakIsLow=true.
+// ---------------------------------------------------------------------------
+const gobletSquat = {
+  id: 'goblet-squat',
+  name: 'Goblet squat',
+  orientation: 'Stand side-on, full body in frame.',
+  driver: 'Knee angle',
+  defaults: { restAngle: 172, peakAngle: 82 },
+  calibrateMetric: 'drivingAngle',
+  peakIsLow: true,
+  progressFrom,
+  measure: squat.measure, // identical geometry to the bodyweight squat
+  coach(m, state) {
+    if (!m.valid) return { text: m.reason, tone: 'warn' };
+    // goblet load lets you (and asks you to) stay more upright than a bodyweight squat
+    if (m.aux.torso < 55) return { text: 'Chest tall, elbows in', tone: 'bad' };
+    if (state.phase === 'active' && state.direction === 'down' && state.progress < 0.6) {
+      return { text: 'A little lower', tone: 'warn' };
+    }
+    if (state.phase === 'active' && state.direction === 'up') return { text: 'Drive up', tone: 'good' };
+    return { text: 'Ready', tone: 'good' };
+  },
+};
+
+// ---------------------------------------------------------------------------
+// BENCH PRESS — side-on, supine. Driving joint: elbow. Peak = lockout (LARGE
+// angle), so peakIsLow=false (mapping inverts like the shoulder press). Coach
+// watches touch depth (bar to chest) at the bottom and lockout at the top.
+// ---------------------------------------------------------------------------
+const benchPress = {
+  id: 'bench-press',
+  name: 'Bench press',
+  orientation: 'Lie side-on to the camera, working arm nearest.',
+  driver: 'Elbow angle',
+  defaults: { restAngle: 74, peakAngle: 168 },
+  calibrateMetric: 'drivingAngle',
+  peakIsLow: false,
+  progressFrom,
+  measure(lm) {
+    const side = betterSide(lm, [LM.LEFT_SHOULDER, LM.LEFT_ELBOW, LM.LEFT_WRIST], [LM.RIGHT_SHOULDER, LM.RIGHT_ELBOW, LM.RIGHT_WRIST]);
+    const P = side === 'L'
+      ? { sh: lm[LM.LEFT_SHOULDER], el: lm[LM.LEFT_ELBOW], wr: lm[LM.LEFT_WRIST] }
+      : { sh: lm[LM.RIGHT_SHOULDER], el: lm[LM.RIGHT_ELBOW], wr: lm[LM.RIGHT_WRIST] };
+    if (!visible([P.sh, P.el, P.wr])) return { valid: false, reason: 'Show your working arm', side };
+    const elbow = angle(P.sh, P.el, P.wr);
+    // supine side-on: wrist above the shoulder line (image y grows down) at lockout.
+    const wristAboveShoulder = P.sh.y - P.wr.y; // >0 means pressed up
+    return { valid: true, side, drivingAngle: elbow, aux: { wristAboveShoulder } };
+  },
+  coach(m, state) {
+    if (!m.valid) return { text: m.reason, tone: 'warn' };
+    // full ROM but hands never travelled up = not a real press
+    if (state.progress >= 0.85 && m.aux.wristAboveShoulder <= 0) {
+      return { text: 'Press the bar up', tone: 'bad' };
+    }
+    if (state.phase === 'active' && state.direction === 'down' && state.progress < 0.4) {
+      return { text: 'Lower to your chest', tone: 'warn' };
+    }
+    if (state.phase === 'active' && state.direction === 'up') return { text: 'Press up', tone: 'good' };
+    if (state.phase === 'active' && state.direction === 'down') return { text: 'Control down', tone: 'good' };
+    return { text: 'Ready', tone: 'good' };
+  },
+};
+
+// ---------------------------------------------------------------------------
+// SKULL CRUSHER — side-on, supine. Driving joint: elbow. Peak = weight at the
+// forehead (SMALL angle), so peakIsLow=true. The whole point is a fixed upper
+// arm: coach flags upper-arm drift (hip-shoulder-elbow leaving ~vertical).
+// ---------------------------------------------------------------------------
+const skullCrusher = {
+  id: 'skull-crusher',
+  name: 'Skull crusher',
+  orientation: 'Lie side-on, track the near arm.',
+  driver: 'Elbow angle',
+  defaults: { restAngle: 162, peakAngle: 60 },
+  calibrateMetric: 'drivingAngle',
+  peakIsLow: true,
+  progressFrom,
+  measure(lm) {
+    const side = betterSide(lm, [LM.LEFT_SHOULDER, LM.LEFT_ELBOW, LM.LEFT_WRIST], [LM.RIGHT_SHOULDER, LM.RIGHT_ELBOW, LM.RIGHT_WRIST]);
+    const P = side === 'L'
+      ? { sh: lm[LM.LEFT_SHOULDER], el: lm[LM.LEFT_ELBOW], wr: lm[LM.LEFT_WRIST], hip: lm[LM.LEFT_HIP] }
+      : { sh: lm[LM.RIGHT_SHOULDER], el: lm[LM.RIGHT_ELBOW], wr: lm[LM.RIGHT_WRIST], hip: lm[LM.RIGHT_HIP] };
+    if (!visible([P.sh, P.el, P.wr])) return { valid: false, reason: 'Show your working arm', side };
+    const elbow = angle(P.sh, P.el, P.wr);
+    // upper-arm angle at the shoulder (hip-shoulder-elbow). A steady skull crusher
+    // keeps the upper arm ~perpendicular to the torso (~90°); drift = it swinging.
+    const upperArm = visible([P.hip, P.sh, P.el]) ? angle(P.hip, P.sh, P.el) : null;
+    return { valid: true, side, drivingAngle: elbow, aux: { upperArm } };
+  },
+  coach(m, state) {
+    if (!m.valid) return { text: m.reason, tone: 'warn' };
+    if (m.aux.upperArm != null && Math.abs(m.aux.upperArm - 90) > 28) {
+      return { text: 'Keep your upper arms still', tone: 'bad' };
+    }
+    if (state.phase === 'active' && state.direction === 'up') return { text: 'Extend', tone: 'good' };
+    if (state.phase === 'active' && state.direction === 'down') return { text: 'Lower to your forehead', tone: 'good' };
+    return { text: 'Ready', tone: 'good' };
+  },
+};
+
+// ---------------------------------------------------------------------------
+// TRICEPS PUSHDOWN — side-on. Driving joint: elbow. Peak = arm extended down
+// (LARGE angle), so peakIsLow=false. Coach pins the elbow to the torso (small,
+// steady hip-shoulder-elbow) — the same cue as the curl, inverted phase.
+// ---------------------------------------------------------------------------
+const tricepsPushdown = {
+  id: 'triceps-pushdown',
+  name: 'Triceps pushdown',
+  orientation: 'Stand side-on, working arm toward the camera.',
+  driver: 'Elbow angle',
+  defaults: { restAngle: 68, peakAngle: 168 },
+  calibrateMetric: 'drivingAngle',
+  peakIsLow: false,
+  progressFrom,
+  measure(lm) {
+    const side = betterSide(lm, [LM.LEFT_SHOULDER, LM.LEFT_ELBOW, LM.LEFT_WRIST], [LM.RIGHT_SHOULDER, LM.RIGHT_ELBOW, LM.RIGHT_WRIST]);
+    const P = side === 'L'
+      ? { sh: lm[LM.LEFT_SHOULDER], el: lm[LM.LEFT_ELBOW], wr: lm[LM.LEFT_WRIST], hip: lm[LM.LEFT_HIP] }
+      : { sh: lm[LM.RIGHT_SHOULDER], el: lm[LM.RIGHT_ELBOW], wr: lm[LM.RIGHT_WRIST], hip: lm[LM.RIGHT_HIP] };
+    if (!visible([P.sh, P.el, P.wr])) return { valid: false, reason: 'Show your working arm', side };
+    const elbow = angle(P.sh, P.el, P.wr);
+    const upperArm = visible([P.hip, P.sh, P.el]) ? angle(P.hip, P.sh, P.el) : null;
+    return { valid: true, side, drivingAngle: elbow, aux: { upperArm } };
+  },
+  coach(m, state) {
+    if (!m.valid) return { text: m.reason, tone: 'warn' };
+    if (m.aux.upperArm != null && m.aux.upperArm > 35) return { text: 'Pin your elbows', tone: 'bad' };
+    if (state.phase === 'active' && state.direction === 'up') return { text: 'Press down', tone: 'good' };
+    if (state.phase === 'active' && state.direction === 'down') return { text: 'Control up', tone: 'good' };
+    return { text: 'Ready', tone: 'good' };
+  },
+};
+
+// ---------------------------------------------------------------------------
+// ONE-ARM DB ROW — EXPERIMENTAL (proxy). Unilateral, side-on. Driving joint:
+// elbow. Peak = elbow pulled back/flexed (SMALL angle), peakIsLow=true. Coach
+// watches the flat-back line (shoulder-hip-knee). The working elbow hides
+// behind the torso at the top, so auto counts are noisy — flagged low-conf.
+// ---------------------------------------------------------------------------
+const dbRow = {
+  id: 'db-row',
+  name: 'One-arm DB row',
+  orientation: 'Side-on to your working side, bent over a bench.',
+  driver: 'Elbow angle',
+  defaults: { restAngle: 172, peakAngle: 60 },
+  calibrateMetric: 'drivingAngle',
+  peakIsLow: true,
+  unilateral: true,
+  experimental: true,
+  progressFrom,
+  measure(lm) {
+    const side = betterSide(lm, [LM.LEFT_SHOULDER, LM.LEFT_ELBOW, LM.LEFT_WRIST], [LM.RIGHT_SHOULDER, LM.RIGHT_ELBOW, LM.RIGHT_WRIST]);
+    const P = side === 'L'
+      ? { sh: lm[LM.LEFT_SHOULDER], el: lm[LM.LEFT_ELBOW], wr: lm[LM.LEFT_WRIST], hip: lm[LM.LEFT_HIP], knee: lm[LM.LEFT_KNEE] }
+      : { sh: lm[LM.RIGHT_SHOULDER], el: lm[LM.RIGHT_ELBOW], wr: lm[LM.RIGHT_WRIST], hip: lm[LM.RIGHT_HIP], knee: lm[LM.RIGHT_KNEE] };
+    if (!visible([P.sh, P.el, P.wr])) return { valid: false, reason: 'Show your working arm', side };
+    const elbow = angle(P.sh, P.el, P.wr);
+    const backLine = visible([P.sh, P.hip, P.knee]) ? angle(P.sh, P.hip, P.knee) : null;
+    return { valid: true, side, drivingAngle: elbow, aux: { backLine }, experimental: true };
+  },
+  coach(m, state) {
+    if (!m.valid) return { text: m.reason, tone: 'warn' };
+    if (m.aux.backLine != null && m.aux.backLine < 150) return { text: 'Flatten your back', tone: 'bad' };
+    if (state.phase === 'active' && state.direction === 'up') return { text: 'Row to your hip', tone: 'good' };
+    if (state.phase === 'active' && state.direction === 'down') return { text: 'Lower with control', tone: 'good' };
+    return { text: 'Ready · experimental count', tone: 'good' };
+  },
+};
+
 export const EXERCISES = {
   [squat.id]: squat,
   [pushup.id]: pushup,
   [lunge.id]: lunge,
   [bicepCurl.id]: bicepCurl,
   [shoulderPress.id]: shoulderPress,
+  [gobletSquat.id]: gobletSquat,
+  [benchPress.id]: benchPress,
+  [skullCrusher.id]: skullCrusher,
+  [tricepsPushdown.id]: tricepsPushdown,
+  [dbRow.id]: dbRow,
 };
 
 export const EXERCISE_LIST = [squat, pushup, lunge, bicepCurl, shoulderPress];

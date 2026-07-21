@@ -170,9 +170,148 @@ button.ghost {
 /* Scroll for tall content on small phones. */
 #home, .sheet { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
-/* ── Wider screens: two columns, capped width ─────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════════════
+   v2 — Hevy-style tracker UI
+   ════════════════════════════════════════════════════════════════════════ */
+.head-right { display: flex; align-items: center; gap: 8px; }
+.icon-btn {
+  width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--panel-2); color: var(--ink); font-size: 17px; cursor: pointer;
+}
+
+/* main content column; leaves room for the fixed bottom nav */
+#main { position: relative; z-index: 3; flex: 1; padding: 0 16px calc(84px + env(safe-area-inset-bottom)); }
+.tab, .screen { display: flex; flex-direction: column; gap: 14px; padding-top: 4px; }
+
+/* generic layout helpers */
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.head-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tiny { font-size: 11px; }
+.wide { width: 100%; }
+button.small { padding: 8px 12px; font-size: 13px; border-radius: 10px; }
+.tiny-btn { padding: 6px 9px; font-size: 12px; }
+.danger { color: var(--bad); }
+.ghost.danger { border-color: #52252a; }
+
+/* badges + confidence dots */
+.badge {
+  display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 6px;
+  background: var(--panel-2); color: var(--muted-2); text-transform: uppercase; letter-spacing: .04em; vertical-align: middle;
+}
+.badge.experimental { background: #3a2a12; color: var(--warn); }
+.badge.pr { background: #123a24; color: var(--mint); }
+.badge.cam { background: #14251d; color: var(--mint); }
+.badge.manual { background: var(--panel-2); color: var(--muted); }
+.cam-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.cam-dot.high { background: var(--mint); } .cam-dot.med { background: var(--warn); } .cam-dot.low { background: var(--bad); }
+
+/* home hero */
+.hero .primary { margin: 10px 0 8px; }
+
+/* bottom nav */
+#bottomnav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; display: flex;
+  background: var(--panel); border-top: 1px solid var(--line);
+  padding: 6px 0 calc(6px + env(safe-area-inset-bottom));
+}
+#bottomnav button {
+  flex: 1; background: none; border: 0; color: var(--muted); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; font-weight: 600;
+}
+#bottomnav button span { font-size: 20px; line-height: 1; }
+#bottomnav button.on { color: var(--mint); }
+
+/* stat grid (history) */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.stat { background: var(--panel-2); border-radius: 12px; padding: 12px 8px; text-align: center; }
+.stat-val { font-size: 22px; font-weight: 800; }
+.stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* routines */
+.routine { border-top: 1px solid var(--line); padding: 12px 0; }
+.routine:first-child { border-top: 0; }
+.routine-day { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; }
+.routine-day .muted { font-size: 12px; margin-top: 2px; }
+
+/* workout history cards */
+.wcard { border-top: 1px solid var(--line); padding: 12px 0; }
+.wcard:first-child { border-top: 0; }
+.wstats { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--muted-2); }
+
+/* ── active workout ─────────────────────────────────────────────────────── */
+.workout-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  position: sticky; top: 0; z-index: 4; background: var(--bg); padding: 8px 0 10px;
+}
+.w-title { font-size: 18px; font-weight: 800; }
+.finish { background: var(--mint); color: var(--mint-ink); border: 0; border-radius: 12px; padding: 12px 18px; font-weight: 800; cursor: pointer; }
+
+.ex-card2 { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; margin-bottom: 12px; }
+.ex-head { display: flex; align-items: center; justify-content: space-between; }
+.ex-head b { font-size: 15px; }
+.prev-line { margin: 6px 0 8px; }
+
+.set-head, .set-row { display: grid; grid-template-columns: 44px 1fr 40px 42px 46px; gap: 6px; align-items: center; }
+.set-head { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; padding: 4px 0; }
+.set-row { padding: 5px 0; }
+.set-row.done .w-in, .set-row.done .r-in { border-color: #2a4d3b; }
+.set-idx { display: flex; align-items: center; gap: 5px; font-weight: 700; color: var(--muted-2); font-size: 13px; }
+.side-btn { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel-2); color: var(--mint); font-size: 11px; font-weight: 700; cursor: pointer; }
+.set-load { display: flex; align-items: center; gap: 5px; }
+.mul { color: var(--muted); }
+.w-in, .r-in, .rpe-in {
+  min-width: 0; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
+  color: var(--ink); padding: 11px 4px; font-size: 15px; font-weight: 650; text-align: center;
+}
+.w-in, .r-in { width: 100%; }
+.rpe-in { width: 100%; padding: 11px 2px; color: var(--muted-2); }
+.type-btn {
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
+  color: var(--muted-2); font-weight: 800; padding: 11px 0; cursor: pointer;
+}
+.type-btn.t-warmup { color: var(--warn); } .type-btn.t-failure { color: var(--bad); } .type-btn.t-drop { color: #6ba8ff; }
+.check-btn {
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
+  color: var(--muted); font-weight: 800; padding: 11px 0; cursor: pointer;
+}
+.check-btn.on { background: var(--mint); color: var(--mint-ink); border-color: var(--mint); }
+.ex-actions { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+
+/* ── exercise picker ────────────────────────────────────────────────────── */
+.picker-head { display: flex; gap: 8px; align-items: center; position: sticky; top: 0; z-index: 4; background: var(--bg); padding: 8px 0; }
+#picker-search { flex: 1; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); padding: 12px; font-size: 15px; }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 8px; -webkit-overflow-scrolling: touch; }
+.chip { white-space: nowrap; background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px; color: var(--muted-2); padding: 8px 13px; font-size: 12px; cursor: pointer; }
+.chip.on { background: var(--mint); color: var(--mint-ink); border-color: var(--mint); }
+.pick-row {
+  display: flex; align-items: center; justify-content: space-between; width: 100%; text-align: left;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 8px; color: var(--ink); cursor: pointer;
+}
+.pick-row:active { transform: scale(.99); }
+
+/* ── settings sheet ─────────────────────────────────────────────────────── */
+.set-field { margin-top: 14px; }
+.set-field label { display: block; font-size: 13px; color: var(--muted-2); margin-bottom: 6px; }
+.set-field input { width: 100%; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); padding: 12px; font-size: 15px; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { flex: 1; background: var(--panel-2); border: 0; color: var(--muted-2); padding: 12px; font-weight: 700; cursor: pointer; }
+.seg button.on { background: var(--mint); color: var(--mint-ink); }
+
+/* experimental / warn banner in coach mode */
+.warn-banner { background: #3a2a12; color: var(--warn); border-radius: 10px; padding: 10px 12px; font-size: 13px; }
+
+/* ── float the coach + timer overlays above everything ──────────────────── */
+#hud, #calib-overlay, #rest-overlay, #screen-settings {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; margin: 0;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+}
+#hud { display: flex; flex-direction: column; gap: 10px; }
+#screen-settings { max-height: 88vh; overflow-y: auto; }
+#calib-overlay, #rest-overlay { display: flex; flex-direction: column; }
+
+/* ── Wider screens: capped width ────────────────────────────────────────── */
 @media (min-width: 820px) {
-  #app { max-width: 1200px; margin: 0 auto; }
+  #app { max-width: 900px; margin: 0 auto; }
   #stage { position: relative; border-radius: 20px; overflow: hidden; margin: 0 16px; min-height: 62vh; inset: auto; }
-  .overlay { max-width: 520px; }
+  #hud, #calib-overlay, #rest-overlay, #screen-settings { max-width: 900px; margin: 0 auto; }
 }

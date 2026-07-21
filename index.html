@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Form Coach" />
-  <meta name="description" content="Camera-only exercise form coach. Pose runs locally in your browser — video never leaves your device." />
+  <meta name="description" content="On-device strength tracker with an optional camera form coach. Pose runs locally — video never leaves your device." />
   <title>Janai Form Coach</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
@@ -18,94 +18,147 @@
 <body>
 <div id="app">
   <header>
-    <h1>Janai Form Coach</h1>
-    <div class="pill" id="status">starting…</div>
+    <h1 id="app-title">Form Coach</h1>
+    <div class="head-right">
+      <div class="pill" id="status">starting…</div>
+      <button class="icon-btn" id="btn-settings" aria-label="Settings">⚙︎</button>
+    </div>
   </header>
 
-  <!-- Camera stage (fixed, behind overlays) -->
+  <!-- Camera stage (fixed, behind overlays; only used in Camera Coach) -->
   <section id="stage" class="hidden" aria-label="Camera view">
     <video id="video" autoplay playsinline muted></video>
     <canvas id="overlay"></canvas>
   </section>
 
-  <!-- HOME -->
-  <section id="home" class="overlay">
-    <div class="card">
-      <div class="label">Choose an exercise</div>
-      <div class="exercise-grid" id="exercise-grid"></div>
-    </div>
+  <main id="main">
+    <!-- ══ HOME TAB ══════════════════════════════════════════════════════ -->
+    <section id="tab-home" class="tab">
+      <div class="hero card">
+        <div class="label">Start training</div>
+        <button class="primary" id="btn-start-empty">Start empty workout</button>
+        <button class="ghost wide" id="btn-repeat-last">Repeat last workout</button>
+      </div>
 
-    <div class="card">
-      <div class="target-row">
+      <div class="card">
+        <div class="label">Occam-style A/B <span class="badge experimental">preset</span></div>
+        <p class="muted" id="occam-blurb" style="margin:8px 0 12px; line-height:1.5"></p>
+        <div class="row-2">
+          <button class="ghost" id="btn-occam-a">Start Day A</button>
+          <button class="ghost" id="btn-occam-b">Start Day B</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="label">Recent</div>
+        <div id="home-recent" style="margin-top:10px"></div>
+      </div>
+
+      <div class="card privacy">
+        <span class="dot">●</span>
+        <p><b>Private by design.</b> Everything — your logs and the camera pose model — stays on this device. No video, image, landmark, or workout data is ever uploaded.</p>
+      </div>
+    </section>
+
+    <!-- ══ ROUTINES TAB ══════════════════════════════════════════════════ -->
+    <section id="tab-routines" class="tab hidden">
+      <div class="card">
+        <div class="label">Built-in</div>
+        <div id="routines-builtin" style="margin-top:10px"></div>
+      </div>
+      <div class="card">
+        <div class="head-row">
+          <div class="label">Your routines</div>
+          <button class="ghost small" id="btn-new-routine">+ New</button>
+        </div>
+        <div id="routines-custom" style="margin-top:10px"></div>
+      </div>
+    </section>
+
+    <!-- ══ HISTORY TAB ═══════════════════════════════════════════════════ -->
+    <section id="tab-history" class="tab hidden">
+      <div class="card">
+        <div class="label">Lifetime</div>
+        <div id="history-stats" class="stat-grid" style="margin-top:10px"></div>
+      </div>
+      <div class="card">
+        <div class="head-row">
+          <div class="label">Workout history</div>
+          <button class="ghost small" id="btn-export">Export JSON</button>
+        </div>
+        <div id="history-list" style="margin-top:10px"></div>
+      </div>
+    </section>
+
+    <!-- ══ ACTIVE WORKOUT (full-screen mode) ═════════════════════════════ -->
+    <section id="screen-workout" class="screen hidden">
+      <div class="workout-head">
         <div>
-          <div class="label">Target reps</div>
-          <div class="muted" id="calib-status">No saved calibration</div>
+          <div class="w-title" id="workout-title">Workout</div>
+          <div class="muted" id="workout-timer">0:00 · 0 kg · 0 sets</div>
         </div>
-        <div class="stepper">
-          <button id="target-dec" aria-label="Decrease target">–</button>
-          <div id="target-val">10</div>
-          <button id="target-inc" aria-label="Increase target">+</button>
-        </div>
+        <button class="finish" id="btn-finish">Finish</button>
       </div>
-      <div class="toggle-row">
-        <label for="use-calibration">Calibrate my range of motion</label>
-        <input type="checkbox" id="use-calibration" checked />
+      <div id="workout-exercises"></div>
+      <button class="ghost wide" id="btn-add-exercise">+ Add exercise</button>
+      <div class="row-2" style="margin-top:10px">
+        <button class="ghost" id="btn-save-as-routine">Save as routine</button>
+        <button class="ghost danger" id="btn-cancel-workout">Cancel</button>
       </div>
-      <div class="toggle-row">
-        <label for="recalibrate">Re-calibrate this session</label>
-        <input type="checkbox" id="recalibrate" />
+    </section>
+
+    <!-- ══ EXERCISE PICKER (sheet) ═══════════════════════════════════════ -->
+    <section id="screen-picker" class="screen hidden">
+      <div class="picker-head">
+        <input id="picker-search" placeholder="Search exercises…" autocomplete="off" />
+        <button class="ghost small" id="btn-picker-close">Close</button>
       </div>
-    </div>
+      <div class="chips" id="picker-filters"></div>
+      <div id="picker-list"></div>
+    </section>
 
-    <button class="primary" id="btn-begin">Start camera</button>
-    <div class="muted center" id="begin-hint">Loading pose model…</div>
-
-    <div class="card privacy">
-      <span class="dot">●</span>
-      <p><b>Private by design.</b> Your camera is processed entirely on this device using an in-browser pose model. No video, image, or landmark data is ever uploaded or sent anywhere.</p>
-    </div>
-
-    <div class="card">
-      <div class="label">Recent sessions</div>
-      <div id="history-list" style="margin-top:10px"></div>
-      <div class="history-actions">
-        <button class="ghost" id="btn-export">Export JSON</button>
-        <button class="ghost" id="btn-clear-history">Clear history</button>
+    <!-- ══ WORKOUT SUMMARY ═══════════════════════════════════════════════ -->
+    <section id="screen-summary" class="screen hidden">
+      <div class="card">
+        <div class="label">Workout complete</div>
+        <div id="summary-body" style="margin-top:8px"></div>
       </div>
-    </div>
-  </section>
+      <div id="summary-prs"></div>
+      <div class="row-2">
+        <button class="ghost" id="btn-summary-export">Export</button>
+        <button class="primary" id="btn-summary-done">Done</button>
+      </div>
+    </section>
+  </main>
 
-  <!-- WORKOUT HUD -->
+  <!-- ══ CAMERA COACH overlays (reused v1 HUD) ═══════════════════════════ -->
   <section id="hud" class="overlay hidden">
     <div class="hud-top">
       <div class="rep-block">
         <span class="rep-count" id="reps">0</span>
         <span class="rep-target" id="rep-target"></span>
-        <span class="label" id="ex-name">Squat</span>
+        <span class="label" id="ex-name">Exercise</span>
       </div>
       <div class="metric-block">
-        <div class="label" id="metric-label">Knee angle</div>
+        <div class="label" id="metric-label">Angle</div>
         <div class="metric-val" id="metric-primary">—</div>
       </div>
     </div>
-
     <div class="card" style="padding:12px">
       <div class="bar-label"><span>Rep depth</span><span>range of motion</span></div>
       <div class="bar"><div id="progress-fill"></div></div>
       <div class="bar-label" style="margin-top:10px"><span>Set progress</span><span></span></div>
       <div class="bar set"><div id="set-progress-fill"></div></div>
     </div>
-
     <div class="cue good" id="cue">Ready</div>
-
+    <div id="coach-experimental" class="warn-banner hidden">Experimental count — verify the reps before you save.</div>
     <div class="controls">
-      <button id="btn-pause">Pause</button>
-      <button id="btn-reset">Reset</button>
-      <button id="btn-end">End set</button>
+      <button id="btn-coach-pause">Pause</button>
+      <button id="btn-coach-reset">Reset</button>
+      <button id="btn-coach-end">Save reps</button>
     </div>
   </section>
 
-  <!-- CALIBRATION -->
   <section id="calib-overlay" class="overlay sheet hidden">
     <div class="card center">
       <div class="label" id="calib-title">Calibrate</div>
@@ -116,30 +169,53 @@
     </div>
   </section>
 
-  <!-- REST -->
   <section id="rest-overlay" class="overlay sheet hidden">
     <div class="card center">
-      <div class="label">Set complete — rest</div>
-      <div class="big-num" id="rest-timer">60s</div>
-      <div class="controls" style="grid-template-columns:1fr 1fr">
+      <div class="label">Rest</div>
+      <div class="big-num" id="rest-timer">180s</div>
+      <div class="row-2">
         <button id="btn-rest-add">+15s</button>
         <button id="btn-rest-skip">Skip</button>
       </div>
     </div>
   </section>
 
-  <!-- SUMMARY -->
-  <section id="summary-overlay" class="overlay sheet hidden">
+  <!-- ══ SETTINGS (sheet) ══════════════════════════════════════════════ -->
+  <section id="screen-settings" class="overlay sheet hidden">
     <div class="card">
-      <div class="label">Session summary</div>
-      <div id="summary-body" style="margin-top:8px"></div>
-    </div>
-    <div class="controls">
-      <button id="btn-summary-again">Another set</button>
-      <button id="btn-summary-export">Export</button>
-      <button id="btn-summary-home">Home</button>
+      <div class="head-row">
+        <div class="label">Settings</div>
+        <button class="ghost small" id="btn-settings-close">Done</button>
+      </div>
+      <div class="set-field">
+        <label>Units</label>
+        <div class="seg" id="seg-units">
+          <button data-unit="kg" class="on">kg</button>
+          <button data-unit="lb">lb</button>
+        </div>
+      </div>
+      <div class="set-field">
+        <label>Bodyweight (optional, for BW volume)</label>
+        <input id="set-bodyweight" type="number" inputmode="decimal" placeholder="—" />
+      </div>
+      <div class="set-field">
+        <label>Default rest (seconds)</label>
+        <input id="set-rest" type="number" inputmode="numeric" />
+      </div>
+      <div class="toggle-row">
+        <label for="set-autorest">Auto-start rest timer on set complete</label>
+        <input type="checkbox" id="set-autorest" checked />
+      </div>
+      <button class="ghost danger wide" id="btn-reset-data" style="margin-top:14px">Clear all v2 history</button>
     </div>
   </section>
+
+  <!-- ══ BOTTOM NAV ════════════════════════════════════════════════════ -->
+  <nav id="bottomnav">
+    <button id="nav-home" class="on"><span>🏠</span>Home</button>
+    <button id="nav-routines"><span>🗂</span>Routines</button>
+    <button id="nav-history"><span>📈</span>History</button>
+  </nav>
 
   <!-- INSTALL -->
   <div id="install-banner" class="hidden">

@@ -150,7 +150,7 @@ export class SessionRecorder {
   }
 }
 
-/** Wrap a list of session objects into a single exportable document. */
+/** Wrap a list of session objects into a single exportable document (v1). */
 export function toExportDocument(sessions) {
   return {
     schema: SCHEMA,
@@ -158,6 +158,34 @@ export function toExportDocument(sessions) {
     exportedAtMs: null, // caller may stamp; kept null to preserve determinism here
     sessions: sessions.slice(),
   };
+}
+
+// ─── EXPORT SCHEMA v2 (janai.form-coach.workout, version 2) ─────────────────
+// Superset of v1. A v2 document carries Workout objects (see engine/workout.js);
+// each camera-sourced set embeds a v1-shaped `camera` blob, so downstream
+// depth/cue analytics (Janai Health) keep working unchanged. Ingestion reads
+// either a v1 doc (schema "...session", version 1, sessions[]) or a v2 doc
+// (schema "...workout", version 2, workouts[]).
+export const WORKOUT_SCHEMA = 'janai.form-coach.workout';
+export const WORKOUT_SCHEMA_VERSION = 2;
+
+/**
+ * Wrap workouts into the versioned v2 export document.
+ * @param {Object[]} workouts
+ * @param {{settings?:object, migratedFrom?:number}} opts
+ */
+export function toWorkoutExportDocument(workouts, { settings = null, migratedFrom = null } = {}) {
+  const doc = {
+    schema: WORKOUT_SCHEMA,
+    version: WORKOUT_SCHEMA_VERSION,
+    exportedAtMs: null, // caller may stamp
+    settings: settings || { units: 'kg' },
+    workouts: (workouts || []).slice(),
+  };
+  // present ONLY if any workout was imported from v1
+  const hasImport = migratedFrom != null || (workouts || []).some((w) => w && w.importedFromV1);
+  if (hasImport) doc.migratedFrom = migratedFrom != null ? migratedFrom : 1;
+  return doc;
 }
 
 function clamp01(v) {
