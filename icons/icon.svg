@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#0c0f16"/>
+  <rect x="24" y="24" width="464" height="464" rx="92" fill="none" stroke="#1c2230" stroke-width="8"/>
+  <g fill="none" stroke="#57e7ad" stroke-width="26" stroke-linecap="round" stroke-linejoin="round">
+    <!-- head -->
+    <circle cx="256" cy="132" r="34" fill="#57e7ad" stroke="none"/>
+    <!-- torso -->
+    <path d="M256 178 L256 288"/>
+    <!-- arms reaching forward (squat) -->
+    <path d="M256 214 L344 214"/>
+    <path d="M256 214 L168 214"/>
+    <!-- thighs -->
+    <path d="M256 288 L188 330"/>
+    <path d="M256 288 L324 330"/>
+    <!-- shins -->
+    <path d="M188 330 L200 410"/>
+    <path d="M324 330 L312 410"/>
+  </g>
+</svg>

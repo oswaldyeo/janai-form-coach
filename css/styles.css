@@ -1,0 +1,178 @@
+/* Janai Form Coach — mobile-first. Dark theme, mint accent (#57e7ad). */
+:root {
+  color-scheme: dark;
+  --bg: #090b10;
+  --panel: #11141b;
+  --panel-2: #1a1e28;
+  --line: #222632;
+  --ink: #f7f7f8;
+  --muted: #858da0;
+  --muted-2: #aeb6c7;
+  --mint: #57e7ad;
+  --mint-ink: #06110d;
+  --warn: #ffcb69;
+  --bad: #ff7878;
+  --r: 16px;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  overscroll-behavior: none;
+}
+.hidden { display: none !important; }
+.muted { color: var(--muted); font-size: 13px; }
+
+/* App shell fills the dynamic viewport (accounts for mobile browser chrome). */
+#app {
+  position: relative;
+  width: 100%;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: max(12px, env(safe-area-inset-top)) 16px 12px;
+  gap: 10px;
+}
+header h1 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: .2px; }
+.pill {
+  padding: 6px 11px; border-radius: 999px; background: var(--panel-2);
+  font-size: 12px; color: var(--muted-2); white-space: nowrap;
+}
+
+/* ── Stage (camera + overlay) ─────────────────────────────────────────────── */
+#stage {
+  position: fixed; inset: 0; z-index: 0;
+  background: #05070b;
+}
+#stage video, #stage canvas {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; transform: scaleX(-1);
+}
+#stage canvas { pointer-events: none; }
+
+/* Overlays sit above the stage. */
+.overlay {
+  position: relative; z-index: 2;
+  padding: 0 16px calc(16px + env(safe-area-inset-bottom));
+}
+
+/* ── Home ─────────────────────────────────────────────────────────────────── */
+#home { z-index: 3; flex: 1; display: flex; flex-direction: column; gap: 14px; }
+.card {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 16px;
+}
+.label { color: var(--muted); text-transform: uppercase; letter-spacing: .09em; font-size: 11px; }
+
+.exercise-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.ex-card {
+  display: flex; flex-direction: column; gap: 3px; align-items: flex-start;
+  padding: 14px; border-radius: 14px; border: 1.5px solid var(--line);
+  background: var(--panel-2); color: var(--ink); cursor: pointer; text-align: left;
+  transition: border-color .12s, transform .06s;
+}
+.ex-card:active { transform: scale(.98); }
+.ex-card.selected { border-color: var(--mint); background: #14251d; }
+.ex-name { font-weight: 750; font-size: 15px; }
+.ex-sub { font-size: 12px; color: var(--muted); }
+
+.target-row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+.stepper { display: flex; align-items: center; gap: 14px; }
+.stepper button {
+  width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--panel-2); color: var(--ink); font-size: 22px; font-weight: 700;
+}
+#target-val { font-size: 30px; font-weight: 800; min-width: 42px; text-align: center; }
+
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
+.toggle-row label { font-size: 14px; }
+input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--mint); }
+
+button.primary {
+  width: 100%; border: 0; border-radius: 14px; padding: 16px; font-weight: 800; font-size: 16px;
+  color: var(--mint-ink); background: var(--mint); cursor: pointer;
+}
+button.primary:active { transform: scale(.99); }
+button.ghost {
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--ink);
+  border-radius: 12px; padding: 12px 14px; font-weight: 650; cursor: pointer;
+}
+
+.privacy { display: flex; gap: 10px; align-items: flex-start; }
+.privacy .dot { color: var(--mint); font-size: 18px; line-height: 1.2; }
+.privacy p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted-2); }
+
+.hist-row, .sum-row {
+  display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px;
+  padding: 9px 0; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted-2);
+}
+.hist-row:first-child { border-top: 0; }
+.sum-row { grid-template-columns: 1fr auto; }
+.sum-row b, .hist-row b { color: var(--ink); }
+.history-actions { display: flex; gap: 10px; margin-top: 12px; }
+.history-actions button { flex: 1; }
+
+/* ── Workout HUD ──────────────────────────────────────────────────────────── */
+#hud { z-index: 3; margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+.hud-top {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 14px; border-radius: var(--r);
+  background: linear-gradient(180deg, rgba(9,11,16,0) 0%, rgba(9,11,16,.75) 60%, rgba(9,11,16,.92) 100%);
+}
+.rep-block { display: flex; flex-direction: column; }
+.rep-count { font-size: 64px; font-weight: 850; line-height: .9; }
+.rep-target { color: var(--muted); font-size: 16px; font-weight: 600; }
+.metric-block { text-align: right; }
+.metric-val { font-size: 26px; font-weight: 750; margin-top: 4px; }
+
+.cue {
+  font-size: 22px; line-height: 1.2; font-weight: 700; min-height: 30px;
+  padding: 12px 14px; border-radius: 12px; background: rgba(17,20,27,.86);
+  border: 1px solid var(--line);
+}
+.cue.good { color: var(--mint); } .cue.warn { color: var(--warn); } .cue.bad { color: var(--bad); }
+
+.bar { height: 8px; border-radius: 999px; background: var(--panel-2); overflow: hidden; }
+.bar > div { height: 100%; background: var(--mint); width: 0%; transition: width .1s linear; }
+.bar.set > div { background: #6ba8ff; }
+.bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin: 8px 2px 4px; }
+
+.controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.controls button {
+  padding: 15px; border-radius: 12px; border: 1px solid var(--line);
+  background: rgba(26,30,40,.9); color: var(--ink); font-weight: 700; cursor: pointer;
+}
+.controls button#btn-end { background: #2a1618; border-color: #52252a; color: #ffb3b3; }
+
+/* ── Calibration / Rest / Summary sheets ──────────────────────────────────── */
+.sheet {
+  z-index: 4; margin: auto 0 0; display: flex; flex-direction: column; gap: 14px;
+}
+.sheet .card { background: rgba(17,20,27,.94); backdrop-filter: blur(6px); }
+.big-num { font-size: 60px; font-weight: 850; text-align: center; color: var(--mint); }
+.center { text-align: center; }
+
+/* ── Install banner ───────────────────────────────────────────────────────── */
+#install-banner {
+  z-index: 5; position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom));
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 14px; border-radius: 14px; background: var(--panel); border: 1px solid var(--mint);
+}
+#install-banner button { padding: 10px 14px; }
+
+/* Scroll for tall content on small phones. */
+#home, .sheet { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+/* ── Wider screens: two columns, capped width ─────────────────────────────── */
+@media (min-width: 820px) {
+  #app { max-width: 1200px; margin: 0 auto; }
+  #stage { position: relative; border-radius: 20px; overflow: hidden; margin: 0 16px; min-height: 62vh; inset: auto; }
+  .overlay { max-width: 520px; }
+}

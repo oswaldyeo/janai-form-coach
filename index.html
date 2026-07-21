@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#090b10" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Form Coach" />
+  <meta name="description" content="Camera-only exercise form coach. Pose runs locally in your browser — video never leaves your device." />
+  <title>Janai Form Coach</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icons/icon-180.png" />
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Janai Form Coach</h1>
+    <div class="pill" id="status">starting…</div>
+  </header>
+
+  <!-- Camera stage (fixed, behind overlays) -->
+  <section id="stage" class="hidden" aria-label="Camera view">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="overlay"></canvas>
+  </section>
+
+  <!-- HOME -->
+  <section id="home" class="overlay">
+    <div class="card">
+      <div class="label">Choose an exercise</div>
+      <div class="exercise-grid" id="exercise-grid"></div>
+    </div>
+
+    <div class="card">
+      <div class="target-row">
+        <div>
+          <div class="label">Target reps</div>
+          <div class="muted" id="calib-status">No saved calibration</div>
+        </div>
+        <div class="stepper">
+          <button id="target-dec" aria-label="Decrease target">–</button>
+          <div id="target-val">10</div>
+          <button id="target-inc" aria-label="Increase target">+</button>
+        </div>
+      </div>
+      <div class="toggle-row">
+        <label for="use-calibration">Calibrate my range of motion</label>
+        <input type="checkbox" id="use-calibration" checked />
+      </div>
+      <div class="toggle-row">
+        <label for="recalibrate">Re-calibrate this session</label>
+        <input type="checkbox" id="recalibrate" />
+      </div>
+    </div>
+
+    <button class="primary" id="btn-begin">Start camera</button>
+    <div class="muted center" id="begin-hint">Loading pose model…</div>
+
+    <div class="card privacy">
+      <span class="dot">●</span>
+      <p><b>Private by design.</b> Your camera is processed entirely on this device using an in-browser pose model. No video, image, or landmark data is ever uploaded or sent anywhere.</p>
+    </div>
+
+    <div class="card">
+      <div class="label">Recent sessions</div>
+      <div id="history-list" style="margin-top:10px"></div>
+      <div class="history-actions">
+        <button class="ghost" id="btn-export">Export JSON</button>
+        <button class="ghost" id="btn-clear-history">Clear history</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- WORKOUT HUD -->
+  <section id="hud" class="overlay hidden">
+    <div class="hud-top">
+      <div class="rep-block">
+        <span class="rep-count" id="reps">0</span>
+        <span class="rep-target" id="rep-target"></span>
+        <span class="label" id="ex-name">Squat</span>
+      </div>
+      <div class="metric-block">
+        <div class="label" id="metric-label">Knee angle</div>
+        <div class="metric-val" id="metric-primary">—</div>
+      </div>
+    </div>
+
+    <div class="card" style="padding:12px">
+      <div class="bar-label"><span>Rep depth</span><span>range of motion</span></div>
+      <div class="bar"><div id="progress-fill"></div></div>
+      <div class="bar-label" style="margin-top:10px"><span>Set progress</span><span></span></div>
+      <div class="bar set"><div id="set-progress-fill"></div></div>
+    </div>
+
+    <div class="cue good" id="cue">Ready</div>
+
+    <div class="controls">
+      <button id="btn-pause">Pause</button>
+      <button id="btn-reset">Reset</button>
+      <button id="btn-end">End set</button>
+    </div>
+  </section>
+
+  <!-- CALIBRATION -->
+  <section id="calib-overlay" class="overlay sheet hidden">
+    <div class="card center">
+      <div class="label" id="calib-title">Calibrate</div>
+      <p id="calib-instructions" style="margin:10px 0; line-height:1.5"></p>
+      <div class="big-num" id="calib-count">12</div>
+      <div class="muted" id="calib-live" style="min-height:20px">Move into frame…</div>
+      <button class="ghost" id="btn-calib-skip" style="margin-top:12px">Skip · use defaults</button>
+    </div>
+  </section>
+
+  <!-- REST -->
+  <section id="rest-overlay" class="overlay sheet hidden">
+    <div class="card center">
+      <div class="label">Set complete — rest</div>
+      <div class="big-num" id="rest-timer">60s</div>
+      <div class="controls" style="grid-template-columns:1fr 1fr">
+        <button id="btn-rest-add">+15s</button>
+        <button id="btn-rest-skip">Skip</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SUMMARY -->
+  <section id="summary-overlay" class="overlay sheet hidden">
+    <div class="card">
+      <div class="label">Session summary</div>
+      <div id="summary-body" style="margin-top:8px"></div>
+    </div>
+    <div class="controls">
+      <button id="btn-summary-again">Another set</button>
+      <button id="btn-summary-export">Export</button>
+      <button id="btn-summary-home">Home</button>
+    </div>
+  </section>
+
+  <!-- INSTALL -->
+  <div id="install-banner" class="hidden">
+    <span>Install Form Coach for full-screen, offline use.</span>
+    <button class="primary" id="btn-install" style="width:auto">Install</button>
+  </div>
+</div>
+
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>
