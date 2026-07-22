@@ -20,8 +20,9 @@ import {
   nextLoadSuggestion, cadenceScore, SET_TYPES,
 } from './engine/workout.js';
 import {
-  BUILTIN_ROUTINES, OCCAM_ROUTINE, routineToWorkout, repeatWorkout, workoutToRoutine, makeRoutine,
+  BUILTIN_ROUTINES, OCCAM_ROUTINE, OS_FULL_BODY_ROUTINE, routineToWorkout, repeatWorkout, workoutToRoutine, makeRoutine,
 } from './engine/routines.js';
+import { generateWOD } from './engine/wod.js';
 import { createPoseLandmarker } from './pose.js';
 import {
   loadWorkouts, saveWorkout, clearWorkouts, loadRoutines, saveRoutine, deleteRoutine,
@@ -39,6 +40,8 @@ const state = {
   settings: loadSettings(),
   history: [],
   routines: [],
+  wod: null,
+  wodVariant: 0,
   workout: null,          // active Workout (plain object from engine/workout)
   wTimer: null,           // workout elapsed timer
   picker: { target: 'workout', filterMuscle: null, onPick: null },
@@ -143,11 +146,51 @@ function goBack() {
 function renderHome() {
   $('occam-blurb').textContent = OCCAM_ROUTINE.disclaimer;
   show($('btn-resume-workout'), !!state.workout);
+  renderWOD();
   const el = $('home-recent');
   if (!el) return;
   if (!state.history.length) { el.innerHTML = '<div class="muted">No workouts yet. Start one above.</div>'; return; }
   el.innerHTML = state.history.slice(0, 5).map(recentRow).join('');
   $('btn-repeat-last').disabled = !state.history.length;
+}
+
+function renderWOD() {
+  const t = now();
+  if (!state.wod || t >= state.wod.meta.expiresAtMs) {
+    state.wod = generateWOD({
+      history: state.history,
+      baselineRoutine: OS_FULL_BODY_ROUTINE,
+      nowMs: t,
+      variant: state.wodVariant,
+    });
+  }
+  const { workout, meta } = state.wod;
+  $('wod-title').textContent = workout.title;
+  $('wod-rationale').textContent = meta.rationale;
+  $('wod-exercises').innerHTML = workout.exercises.map((ex) => {
+    const cat = getCatalogEntry(ex.exerciseId);
+    const first = ex.sets[0] || {};
+    const prescription = first.weight == null
+      ? `${ex.sets.length} × ${first.reps} reps · bodyweight`
+      : `${ex.sets.length} × ${first.reps} @ ${fmtWeight(first.weight)}`;
+    return `<div class="wod-row"><span>${esc(cat ? cat.name : ex.exerciseId)}</span><b>${esc(prescription)}</b></div>`;
+  }).join('');
+}
+
+function regenerateWOD() {
+  state.wodVariant += 1;
+  state.wod = null;
+  renderWOD();
+}
+
+function startWOD() {
+  if (!state.wod) renderWOD();
+  state.workout = makeWorkout({
+    ...state.wod.workout,
+    id: newWorkoutId(),
+    startedAtMs: now(),
+  });
+  openWorkout();
 }
 
 function recentRow(w) {
@@ -903,6 +946,8 @@ function wireEvents() {
   $('btn-start-empty').addEventListener('click', startEmptyWorkout);
   $('btn-resume-workout').addEventListener('click', openWorkout);
   $('btn-back').addEventListener('click', goBack);
+  $('btn-wod-start').addEventListener('click', startWOD);
+  $('btn-wod-regenerate').addEventListener('click', regenerateWOD);
   $('btn-repeat-last').addEventListener('click', startRepeatLast);
   $('btn-occam-a').addEventListener('click', () => startOccam('A'));
   $('btn-occam-b').addEventListener('click', () => startOccam('B'));
