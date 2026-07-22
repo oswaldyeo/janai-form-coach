@@ -106,7 +106,12 @@ function setTab(tab) {
   show($('tab-routines'), tab === 'routines');
   show($('tab-history'), tab === 'history');
   ['home', 'routines', 'history'].forEach((t) => {
-    const b = $(`nav-${t}`); if (b) b.classList.toggle('on', t === tab);
+    const b = $(`nav-${t}`);
+    if (b) {
+      b.classList.toggle('on', t === tab);
+      if (t === tab) b.setAttribute('aria-current', 'page');
+      else b.removeAttribute('aria-current');
+    }
   });
   if (tab === 'home') renderHome();
   if (tab === 'routines') renderRoutines();
@@ -125,6 +130,7 @@ function showScreen(id) {
   show($('bottomnav'), !onScreen && !inCoach());
   show($('btn-back'), onScreen);
   if (!onScreen) setTab(state.tab);
+  refreshInstallBanner();
 }
 
 function goBack() {
@@ -144,14 +150,17 @@ function goBack() {
 // HOME TAB
 // ════════════════════════════════════════════════════════════════════════════
 function renderHome() {
-  $('occam-blurb').textContent = OCCAM_ROUTINE.disclaimer;
+  show($('home-active'), !!state.workout);
   show($('btn-resume-workout'), !!state.workout);
   renderWOD();
+  // Disable "Repeat last workout" when there's nothing to repeat. Set this
+  // before the empty-history early return below, or it never runs when empty.
+  $('btn-repeat-last').disabled = !state.history.length;
   const el = $('home-recent');
   if (!el) return;
-  if (!state.history.length) { el.innerHTML = '<div class="muted">No workouts yet. Start one above.</div>'; return; }
-  el.innerHTML = state.history.slice(0, 5).map(recentRow).join('');
-  $('btn-repeat-last').disabled = !state.history.length;
+  show($('home-recent-card'), !!state.history.length);
+  if (!state.history.length) { el.innerHTML = ''; return; }
+  el.innerHTML = state.history.slice(0, 3).map(recentRow).join('');
 }
 
 function renderWOD() {
@@ -165,14 +174,14 @@ function renderWOD() {
     });
   }
   const { workout, meta } = state.wod;
-  $('wod-title').textContent = workout.title;
+  $('wod-title').textContent = workout.title.replace('Workout of the Day · ', '');
   $('wod-rationale').textContent = meta.rationale;
   $('wod-exercises').innerHTML = workout.exercises.map((ex) => {
     const cat = getCatalogEntry(ex.exerciseId);
     const first = ex.sets[0] || {};
     const prescription = first.weight == null
-      ? `${ex.sets.length} × ${first.reps} reps · bodyweight`
-      : `${ex.sets.length} × ${first.reps} @ ${fmtWeight(first.weight)}`;
+      ? `${ex.sets.length} × ${first.reps} · BW`
+      : `${ex.sets.length} × ${first.reps} · ${fmtWeight(first.weight)}`;
     return `<div class="wod-row"><span>${esc(cat ? cat.name : ex.exerciseId)}</span><b>${esc(prescription)}</b></div>`;
   }).join('');
 }
@@ -345,7 +354,18 @@ function updateWorkoutHead() {
 function renderWorkout() {
   const host = $('workout-exercises');
   if (!host || !state.workout) return;
-  host.innerHTML = state.workout.exercises.map((ex, ei) => exerciseCard(ex, ei)).join('');
+  const empty = !state.workout.exercises.length;
+  host.innerHTML = !empty
+    ? state.workout.exercises.map((ex, ei) => exerciseCard(ex, ei)).join('')
+    : `<div class="workout-empty">
+        <b>Build your workout</b>
+        <span>Add an exercise to start logging sets.</span>
+      </div>`;
+  $('btn-save-as-routine').disabled = empty;
+  $('btn-finish').disabled = completedSetCount(state.workout) === 0;
+  const add = $('btn-add-exercise');
+  add.className = empty ? 'primary wide' : 'ghost wide';
+  add.textContent = empty ? '+ Add your first exercise' : '+ Add exercise';
   wireWorkoutEvents(host);
   updateWorkoutHead();
 }
@@ -452,6 +472,7 @@ function wireWorkoutEvents(host) {
       }
     }
     state.workout = updateSet(state.workout, ei, si, patch);
+    if (nowDone) { try { navigator.vibrate?.(12); } catch {} }
     renderWorkout();
     if (nowDone && state.settings.autoStartRest) startRest(ei);
   }));
@@ -679,6 +700,7 @@ async function enterCoach(exIndex) {
   show($('bottomnav'), false);
   show($('main'), false);
   show($('stage'), true);
+  refreshInstallBanner();
   const exp = isExperimentalCamera(ex.exerciseId);
   show($('coach-experimental'), exp);
 
@@ -763,7 +785,7 @@ async function initPose() {
   try {
     const { landmarker, delegate, lib } = await createPoseLandmarker();
     state.pose = { landmarker, delegate, lib, ready: true, drawing: null };
-    setStatus(`ready · ${delegate}`);
+    setStatus('ready');
   } catch (e) {
     console.warn('[app] pose model unavailable', e);
     state.pose.ready = false;
@@ -931,9 +953,19 @@ function exportJSON() {
 // PWA install
 // ════════════════════════════════════════════════════════════════════════════
 let deferredPrompt = null;
+let installReady = false;
 window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault(); deferredPrompt = e; show($('install-banner'), true);
+  e.preventDefault(); deferredPrompt = e; installReady = true; refreshInstallBanner();
 });
+
+// Show the install prompt only on the tab views. On a full-screen mode (active
+// workout, picker, summary) or in camera coach it would collide with the fixed
+// bottom nav / controls, so keep it out of the way there.
+function refreshInstallBanner() {
+  const on = installReady && !state.screen && !inCoach();
+  show($('install-banner'), on);
+  document.body.classList.toggle('has-install-banner', on);
+}
 
 // ════════════════════════════════════════════════════════════════════════════
 // WIRING + BOOT
@@ -949,8 +981,6 @@ function wireEvents() {
   $('btn-wod-start').addEventListener('click', startWOD);
   $('btn-wod-regenerate').addEventListener('click', regenerateWOD);
   $('btn-repeat-last').addEventListener('click', startRepeatLast);
-  $('btn-occam-a').addEventListener('click', () => startOccam('A'));
-  $('btn-occam-b').addEventListener('click', () => startOccam('B'));
 
   $('btn-add-exercise').addEventListener('click', () => openPicker('workout'));
   $('btn-finish').addEventListener('click', finishWorkout);
@@ -988,7 +1018,11 @@ function wireEvents() {
   if (inst) inst.addEventListener('click', async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null;
-    show($('install-banner'), false);
+    installReady = false; refreshInstallBanner();
+  });
+  const dismissInstall = $('btn-install-close');
+  if (dismissInstall) dismissInstall.addEventListener('click', () => {
+    installReady = false; refreshInstallBanner();
   });
 
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
