@@ -115,7 +115,7 @@ button:disabled { opacity: .42; cursor: default; }
 button:disabled:active { transform: none; }
 /* Keyboard focus ring (tap highlight is suppressed globally). */
 button:focus-visible, input:focus-visible, .chip:focus-visible, a:focus-visible {
-  outline: 2px solid var(--mint); outline-offset: 2px;
+  outline: 2px solid #e2e2e8; outline-offset: 2px;
 }
 
 .privacy { display: flex; gap: 10px; align-items: flex-start; }
@@ -296,23 +296,24 @@ button.small { min-height: 40px; padding: 8px 12px; font-size: 13px; border-radi
 .ex-head b { font-size: 15px; }
 .prev-line { margin: 6px 0 8px; }
 
-.set-head, .set-row { display: grid; grid-template-columns: 44px 1fr 40px 42px 46px; gap: 6px; align-items: center; }
+.set-head, .set-row { display: grid; grid-template-columns: 44px 1fr 52px 42px 46px; gap: 6px; align-items: center; }
 .set-head { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; padding: 4px 0; }
+.metric-head { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 5px; text-align: center; }
 .set-row { padding: 5px 0; }
 .set-row.done .w-in, .set-row.done .r-in { border-color: #7a2030; }
 .set-idx { display: flex; align-items: center; gap: 5px; font-weight: 700; color: var(--muted-2); font-size: 13px; }
 .side-btn { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel-2); color: var(--mint); font-size: 11px; font-weight: 700; cursor: pointer; }
 .set-load { display: flex; align-items: center; gap: 5px; }
 .mul { color: var(--muted); }
-.w-in, .r-in, .rpe-in {
+.w-in, .r-in, .metric-in, .rpe-in {
   min-width: 0; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
   color: var(--ink); padding: 11px 4px; font-size: 15px; font-weight: 650; text-align: center;
 }
-.w-in, .r-in { width: 100%; }
+.w-in, .r-in, .metric-in { width: 100%; }
 .rpe-in { width: 100%; padding: 11px 2px; color: var(--muted-2); }
 .type-btn {
   background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
-  color: var(--muted-2); font-weight: 800; padding: 11px 0; cursor: pointer;
+  color: var(--muted-2); font-size: 10px; font-weight: 800; padding: 12px 2px; cursor: pointer;
 }
 .type-btn.t-warmup { color: var(--warn); } .type-btn.t-failure { color: var(--bad); } .type-btn.t-drop { color: #6ba8ff; }
 .check-btn {
@@ -333,6 +334,8 @@ button.small { min-height: 40px; padding: 8px 12px; font-size: 13px; border-radi
 .picker-head { display: flex; gap: 8px; align-items: center; position: sticky; top: 0; z-index: 4; background: var(--bg); padding: 8px 0; }
 #picker-search { flex: 1; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); padding: 12px; font-size: 16px; }
 .chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 8px; -webkit-overflow-scrolling: touch; }
+.filter-group > span { display: block; margin: 2px 0 5px; color: var(--muted); font-size: 10px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+.picker-count { margin: 1px 0 9px; font-size: 12px; }
 .chip { white-space: nowrap; background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px; color: var(--muted-2); padding: 8px 13px; font-size: 12px; cursor: pointer; }
 .chip.on { background: var(--mint); color: var(--mint-ink); border-color: var(--mint); }
 .pick-row {
@@ -340,6 +343,9 @@ button.small { min-height: 40px; padding: 8px 12px; font-size: 13px; border-radi
   background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 8px; color: var(--ink); cursor: pointer;
 }
 .pick-row:active { transform: scale(.99); }
+.pick-row > span:first-child { min-width: 0; }
+.pick-meta { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
+.pick-row .badge { flex: 0 0 auto; margin-left: 10px; }
 
 /* ── settings sheet ─────────────────────────────────────────────────────── */
 .set-field { margin-top: 14px; }

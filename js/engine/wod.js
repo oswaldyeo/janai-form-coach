@@ -38,7 +38,7 @@ export function generateWOD({
   if (!Number.isFinite(nowMs)) throw new Error('generateWOD requires an injected nowMs');
   const safeVariant = Math.max(0, Math.round(Number(variant) || 0));
   const allowed = new Map(catalog
-    .filter((e) => e.equipment === 'dumbbell' || e.equipment === 'bodyweight')
+    .filter((e) => e.equipment === 'dumbbell' || e.equipment === 'none')
     .map((e) => [e.id, e]));
   const recent = newestWorkout(history);
   const recoveryMode = !!(recent && nowMs - recent.startedAtMs >= 0 && nowMs - recent.startedAtMs < 36 * HOUR_MS);

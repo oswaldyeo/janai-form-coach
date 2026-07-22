@@ -4,7 +4,8 @@
 //
 //   Workout            { id, title, startedAtMs, endedAtMs, note, exercises[] }
 //     ExerciseInstance { exerciseId, sets[] }
-//       Set            { weight, reps, type, rpe, completed, source, side, camera }
+//       Set            { weight, reps, durationSec, distanceM, steps, floors,
+//                        type, rpe, completed, source, side, camera }
 //
 // A Set is the atom: `weight × reps`, entered manually by default. The camera
 // coach can pre-fill `reps` (and attach a v1-shaped `camera` provenance blob),
@@ -22,6 +23,10 @@ export function makeSet(partial = {}) {
   return {
     weight: partial.weight == null ? null : Number(partial.weight),
     reps: partial.reps == null ? 0 : Math.max(0, Math.round(Number(partial.reps) || 0)),
+    durationSec: partial.durationSec == null ? 0 : Math.max(0, Math.round(Number(partial.durationSec) || 0)),
+    distanceM: partial.distanceM == null ? 0 : Math.max(0, Number(partial.distanceM) || 0),
+    steps: partial.steps == null ? 0 : Math.max(0, Math.round(Number(partial.steps) || 0)),
+    floors: partial.floors == null ? 0 : Math.max(0, Math.round(Number(partial.floors) || 0)),
     type,
     rpe: partial.rpe == null ? null : clampRpe(partial.rpe),
     completed: !!partial.completed,

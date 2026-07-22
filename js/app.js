@@ -8,7 +8,7 @@
 
 import { getExercise } from './engine/exercises.js';
 import {
-  CATALOG_LIST, getCatalogEntry, hasCamera, isExperimentalCamera, searchCatalog, MUSCLES,
+  CATALOG_LIST, getCatalogEntry, hasCamera, isExperimentalCamera, searchCatalog, MUSCLES, EQUIPMENT,
 } from './engine/catalog.js';
 import { RepEngine } from './engine/rep-engine.js';
 import { calibrate } from './engine/calibration.js';
@@ -16,7 +16,7 @@ import { SessionRecorder, toWorkoutExportDocument } from './engine/session.js';
 import {
   makeWorkout, addExercise, removeExercise, addSet, removeSet, updateSet,
   workoutVolume, completedSetCount, totalReps, workoutDurationSec,
-  summarize, newPRsInWorkout, lastPerformance, previousSets, pruneIncompleteSets,
+  summarize, newPRsInWorkout, previousSets, pruneIncompleteSets,
   nextLoadSuggestion, cadenceScore, SET_TYPES,
 } from './engine/workout.js';
 import {
@@ -44,7 +44,7 @@ const state = {
   wodVariant: 0,
   workout: null,          // active Workout (plain object from engine/workout)
   wTimer: null,           // workout elapsed timer
-  picker: { target: 'workout', filterMuscle: null, onPick: null },
+  picker: { target: 'workout', filterMuscle: null, filterEquipment: null, onPick: null },
   // camera coach submode
   coach: null,            // { exIndex, setIndex, exerciseId, exercise, engine, recorder, calib, mode, calibSamples, calibEndsAt }
   pose: { landmarker: null, delegate: null, lib: null, ready: false, drawing: null },
@@ -75,6 +75,24 @@ function fmtDate(ms) {
   return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function humanize(s) { return String(s || '').replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase()); }
+
+const TRACKING_METRICS = {
+  weight_reps: [{ key: 'weight', label: 'Weight', placeholder: 'kg', decimal: true }, { key: 'reps', label: 'Reps', placeholder: 'reps' }],
+  reps_only: [{ key: 'reps', label: 'Reps', placeholder: 'reps' }],
+  bodyweight_weighted: [{ key: 'weight', label: 'Added kg', placeholder: '+ kg', decimal: true }, { key: 'reps', label: 'Reps', placeholder: 'reps' }],
+  bodyweight_assisted: [{ key: 'weight', label: 'Assist kg', placeholder: 'assist', decimal: true }, { key: 'reps', label: 'Reps', placeholder: 'reps' }],
+  duration: [{ key: 'durationSec', label: 'Seconds', placeholder: 'sec' }],
+  distance_duration: [{ key: 'distanceM', label: 'Metres', placeholder: 'm', decimal: true }, { key: 'durationSec', label: 'Seconds', placeholder: 'sec' }],
+  short_distance_weight: [{ key: 'distanceM', label: 'Metres', placeholder: 'm', decimal: true }, { key: 'weight', label: 'Weight', placeholder: 'kg', decimal: true }],
+  steps_duration: [{ key: 'steps', label: 'Steps', placeholder: 'steps' }, { key: 'durationSec', label: 'Seconds', placeholder: 'sec' }],
+  floors_duration: [{ key: 'floors', label: 'Floors', placeholder: 'floors' }, { key: 'durationSec', label: 'Seconds', placeholder: 'sec' }],
+};
+
+function trackingType(cat) {
+  return cat.trackingType || (cat.loadType === 'bodyweight' ? 'reps_only' : 'weight_reps');
+}
+function metricSpecs(cat) { return TRACKING_METRICS[trackingType(cat)] || TRACKING_METRICS.weight_reps; }
 
 function setStatus(t) { const el = $('status'); if (el) el.textContent = t; }
 
@@ -343,7 +361,21 @@ function updateWorkoutHead() {
   const vol = workoutVolume(state.workout, { bodyweightKg: state.settings.bodyweightKg });
   const sets = completedSetCount(state.workout);
   const t = $('workout-timer');
-  if (t) t.textContent = `${fmtDur(dur)} · ${fmtVol(vol)} · ${sets} set${sets === 1 ? '' : 's'}`;
+  if (t) {
+    const done = state.workout.exercises.flatMap((ex) => ex.sets).filter((s) => s.completed);
+    const distance = done.reduce((n, s) => n + (s.distanceM || 0), 0);
+    const workSec = done.reduce((n, s) => n + (s.durationSec || 0), 0);
+    const steps = done.reduce((n, s) => n + (s.steps || 0), 0);
+    const floors = done.reduce((n, s) => n + (s.floors || 0), 0);
+    const parts = [fmtDur(dur)];
+    if (vol > 0) parts.push(fmtVol(vol));
+    if (distance > 0) parts.push(distance >= 1000 ? `${round1(distance / 1000)} km` : `${round1(distance)} m`);
+    if (workSec > 0) parts.push(`${fmtDur(workSec)} work`);
+    if (steps > 0) parts.push(`${steps} steps`);
+    if (floors > 0) parts.push(`${floors} floors`);
+    parts.push(`${sets} set${sets === 1 ? '' : 's'}`);
+    t.textContent = parts.join(' · ');
+  }
   const title = $('workout-title');
   if (title) title.textContent = state.workout.title;
 }
@@ -372,8 +404,8 @@ function renderWorkout() {
 
 function exerciseCard(ex, ei) {
   const cat = getCatalogEntry(ex.exerciseId) || { name: ex.exerciseId, unilateral: false, loadType: 'external' };
-  const prev = lastPerformance(state.history, ex.exerciseId);
-  const prevStr = prev ? `${prev.sets}×${prev.reps} @ ${fmtWeight(prev.weight)}` : 'first time';
+  const prevSets = previousSets(state.history, ex.exerciseId);
+  const prevStr = prevSets.length ? summarizeTrackedSet(prevSets[0], cat) : 'first time';
   const cam = hasCamera(ex.exerciseId);
   const exp = isExperimentalCamera(ex.exerciseId);
   const camDot = cam ? `<span class="cam-dot ${confClass(cat)}" title="${esc(cat.camera.confidence)} confidence"></span>` : '';
@@ -381,21 +413,32 @@ function exerciseCard(ex, ei) {
     ? `<button class="ghost small" data-coach="${ei}">📷 Coach${exp ? ' <span class="badge experimental">exp</span>' : ''}</button>`
     : '';
 
-  const prevSets = previousSets(state.history, ex.exerciseId);
   const rows = ex.sets.map((s, si) => setRow(ex, s, si, ei, cat, prevSets[si])).join('');
+  const metricHead = metricSpecs(cat).map((m) => `<span>${esc(m.label)}</span>`).join('');
   return `<div class="ex-card2" data-ex="${ei}">
     <div class="ex-head">
       <div>${camDot}<b>${esc(cat.name)}</b>${cat.unilateral ? ' <span class="badge">per side</span>' : ''}</div>
       <button class="ghost tiny-btn" data-rmex="${ei}" aria-label="Remove exercise">✕</button>
     </div>
     <div class="muted tiny prev-line">Previous: ${esc(prevStr)}</div>
-    <div class="set-head"><span>#</span><span>kg/reps</span><span>type</span><span>RPE</span><span>✓</span></div>
+    <div class="set-head"><span>#</span><span class="metric-head">${metricHead}</span><span>type</span><span>RPE</span><span>✓</span></div>
     ${rows}
     <div class="ex-actions">
       <button class="ghost small" data-addset="${ei}">+ Add set</button>
       ${coachBtn}
     </div>
   </div>`;
+}
+
+function summarizeTrackedSet(set, cat) {
+  return metricSpecs(cat).map((m) => {
+    const value = set[m.key];
+    if (m.key === 'weight') return value == null ? null : fmtWeight(value);
+    if (!value) return null;
+    if (m.key === 'durationSec') return `${value}s`;
+    if (m.key === 'distanceM') return `${round1(value)}m`;
+    return `${value} ${m.label.toLowerCase()}`;
+  }).filter(Boolean).join(' · ') || 'logged';
 }
 
 function confClass(cat) {
@@ -407,20 +450,20 @@ function confClass(cat) {
 // Its values become placeholders, and the ✓ button adopts them when the inputs
 // were left empty — the Hevy fast path: match last session by just ticking sets.
 function setRow(ex, s, si, ei, cat, prev) {
-  const bw = cat.loadType === 'bodyweight';
-  const typeLabel = { warmup: 'W', normal: 'N', drop: 'D', failure: 'F' }[s.type] || 'N';
+  const typeLabel = { warmup: 'Warm', normal: 'Normal', drop: 'Drop', failure: 'Fail' }[s.type] || 'Normal';
   const sideLabel = cat.unilateral ? `<button class="side-btn" data-side="${ei}:${si}" aria-label="Working side">${s.side || 'L'}</button>` : '';
   const camTag = s.source === 'camera' ? '<span class="badge cam">📷</span>' : '';
-  const wPh = prev && prev.weight != null ? round1(prev.weight) : (bw ? 'BW' : 'kg');
-  const rPh = prev && prev.reps ? prev.reps : 'reps';
+  const metrics = metricSpecs(cat).map((m) => {
+    const value = s[m.key];
+    const previous = prev && prev[m.key];
+    const placeholder = previous != null && previous !== 0 ? round1(previous) : m.placeholder;
+    const cls = m.key === 'weight' ? 'w-in' : m.key === 'reps' ? 'r-in' : 'metric-in';
+    const shown = m.key === 'weight' ? (value ?? '') : (value || '');
+    return `<input class="${cls}" data-metric="${m.key}" data-set="${ei}:${si}" type="number" inputmode="${m.decimal ? 'decimal' : 'numeric'}" placeholder="${placeholder}" value="${shown}" aria-label="${esc(m.label)}, set ${si + 1}" />`;
+  }).join('');
   return `<div class="set-row ${s.completed ? 'done' : ''}" data-row="${ei}:${si}">
     <span class="set-idx">${si + 1}${sideLabel}</span>
-    <span class="set-load">
-      <input class="w-in" data-w="${ei}:${si}" type="number" inputmode="decimal" placeholder="${wPh}" value="${s.weight ?? ''}" aria-label="Weight, set ${si + 1}" />
-      <span class="mul">×</span>
-      <input class="r-in" data-r="${ei}:${si}" type="number" inputmode="numeric" placeholder="${rPh}" value="${s.reps || ''}" aria-label="Reps, set ${si + 1}" />
-      ${camTag}
-    </span>
+    <span class="set-load">${metrics}${camTag}</span>
     <button class="type-btn t-${s.type}" data-type="${ei}:${si}" aria-label="Set type">${typeLabel}</button>
     <input class="rpe-in" data-rpe="${ei}:${si}" type="number" inputmode="decimal" placeholder="–" aria-label="RPE, set ${si + 1}" value="${s.rpe ?? ''}" />
     <button class="check-btn ${s.completed ? 'on' : ''}" data-done="${ei}:${si}" aria-label="Complete set ${si + 1}" aria-pressed="${s.completed}">✓</button>
@@ -430,15 +473,11 @@ function setRow(ex, s, si, ei, cat, prev) {
 function parseIdx(str) { const [a, b] = str.split(':').map(Number); return [a, b]; }
 
 function wireWorkoutEvents(host) {
-  host.querySelectorAll('[data-w]').forEach((el) => el.addEventListener('change', () => {
-    const [ei, si] = parseIdx(el.dataset.w);
-    const v = el.value === '' ? null : Number(el.value);
-    state.workout = updateSet(state.workout, ei, si, { weight: v });
-    updateWorkoutHead();
-  }));
-  host.querySelectorAll('[data-r]').forEach((el) => el.addEventListener('change', () => {
-    const [ei, si] = parseIdx(el.dataset.r);
-    state.workout = updateSet(state.workout, ei, si, { reps: el.value === '' ? 0 : Number(el.value) });
+  host.querySelectorAll('[data-metric]').forEach((el) => el.addEventListener('change', () => {
+    const [ei, si] = parseIdx(el.dataset.set);
+    const key = el.dataset.metric;
+    const value = el.value === '' ? (key === 'weight' ? null : 0) : Number(el.value);
+    state.workout = updateSet(state.workout, ei, si, { [key]: value });
     updateWorkoutHead();
   }));
   host.querySelectorAll('[data-rpe]').forEach((el) => el.addEventListener('change', () => {
@@ -467,8 +506,10 @@ function wireWorkoutEvents(host) {
       // empty fields adopt the placeholder (= last session's set si), Hevy-style
       const prev = previousSets(state.history, state.workout.exercises[ei].exerciseId)[si];
       if (prev) {
-        if (s.weight == null && prev.weight != null) patch.weight = prev.weight;
-        if (!s.reps && prev.reps) patch.reps = prev.reps;
+        for (const metric of metricSpecs(getCatalogEntry(state.workout.exercises[ei].exerciseId))) {
+          const empty = metric.key === 'weight' ? s[metric.key] == null : !s[metric.key];
+          if (empty && prev[metric.key] != null) patch[metric.key] = prev[metric.key];
+        }
       }
     }
     state.workout = updateSet(state.workout, ei, si, patch);
@@ -479,7 +520,10 @@ function wireWorkoutEvents(host) {
   host.querySelectorAll('[data-addset]').forEach((el) => el.addEventListener('click', () => {
     const ei = Number(el.dataset.addset);
     const last = state.workout.exercises[ei].sets.slice(-1)[0];
-    state.workout = addSet(state.workout, ei, last ? { weight: last.weight, type: 'normal' } : {});
+    state.workout = addSet(state.workout, ei, last ? {
+      weight: last.weight, reps: last.reps, durationSec: last.durationSec,
+      distanceM: last.distanceM, steps: last.steps, floors: last.floors, type: 'normal',
+    } : {});
     renderWorkout();
   }));
   host.querySelectorAll('[data-rmex]').forEach((el) => el.addEventListener('click', () => {
@@ -496,7 +540,7 @@ function wireWorkoutEvents(host) {
 // EXERCISE PICKER
 // ════════════════════════════════════════════════════════════════════════════
 function openPicker(targetMode = 'workout', onPick = null) {
-  state.picker = { target: targetMode, filterMuscle: null, onPick };
+  state.picker = { target: targetMode, filterMuscle: null, filterEquipment: null, onPick };
   showScreen('screen-picker');
   $('picker-search').value = '';
   renderPickerFilters();
@@ -504,28 +548,37 @@ function openPicker(targetMode = 'workout', onPick = null) {
   setTimeout(() => { try { $('picker-search').focus(); } catch {} }, 50);
 }
 
+// Muscle and equipment are independent filter axes: picking a muscle never
+// clears the equipment selection (and vice versa). searchCatalog intersects
+// whichever of the two are set, so "all" on an axis just means no constraint.
 function renderPickerFilters() {
-  const host = $('picker-filters');
-  const chips = ['all', ...MUSCLES];
-  host.innerHTML = chips.map((m) =>
-    `<button class="chip ${(!state.picker.filterMuscle && m === 'all') || state.picker.filterMuscle === m ? 'on' : ''}" data-muscle="${m}">${m}</button>`
+  renderFilterRow('picker-filters-muscle', MUSCLES, 'filterMuscle', 'All muscles');
+  renderFilterRow('picker-filters-equipment', EQUIPMENT, 'filterEquipment', 'All equipment');
+}
+
+function renderFilterRow(hostId, values, key, allLabel) {
+  const host = $(hostId);
+  const active = state.picker[key];
+  host.innerHTML = ['all', ...values].map((v) =>
+    `<button class="chip ${(!active && v === 'all') || active === v ? 'on' : ''}" data-val="${v}">${v === 'all' ? allLabel : humanize(v)}</button>`
   ).join('');
-  host.querySelectorAll('[data-muscle]').forEach((b) => b.addEventListener('click', () => {
-    state.picker.filterMuscle = b.dataset.muscle === 'all' ? null : b.dataset.muscle;
+  host.querySelectorAll('[data-val]').forEach((b) => b.addEventListener('click', () => {
+    state.picker[key] = b.dataset.val === 'all' ? null : b.dataset.val;
     renderPickerFilters(); renderPicker();
   }));
 }
 
 function renderPicker() {
   const q = $('picker-search').value;
-  const results = searchCatalog({ query: q, muscle: state.picker.filterMuscle });
+  const results = searchCatalog({ query: q, muscle: state.picker.filterMuscle, equipment: state.picker.filterEquipment });
   const host = $('picker-list');
+  $('picker-count').textContent = `${results.length} exercise${results.length === 1 ? '' : 's'}`;
   host.innerHTML = results.map((e) => {
     const badge = hasCamera(e)
-      ? `<span class="badge cam ${confClass(e)}">📷 ${e.camera.autoCount}</span>`
-      : '<span class="badge manual">manual</span>';
+      ? `<span class="badge cam ${confClass(e)}">📷 Coach</span>`
+      : `<span class="badge manual">${esc(humanize(trackingType(e)))}</span>`;
     return `<button class="pick-row" data-pick="${e.id}">
-      <span><b>${esc(e.name)}</b><span class="muted tiny"> · ${esc(e.primaryMuscle)} · ${esc(e.equipment)}</span></span>
+      <span><b>${esc(e.name)}</b><span class="pick-meta">${esc(humanize(e.primaryMuscle))} · ${esc(humanize(e.equipment))}</span></span>
       ${badge}
     </button>`;
   }).join('') || '<div class="muted">No matches.</div>';
@@ -586,7 +639,10 @@ function finishWorkout() {
   // uncompleted-but-typed sets would be silently lost by the prune — ask first
   const droppedWithData = state.workout.exercises
     .flatMap((ex) => ex.sets)
-    .filter((s) => !s.completed && (s.weight != null || (s.reps || 0) > 0)).length;
+    .filter((s) => !s.completed && (
+      s.weight != null || (s.reps || 0) > 0 || (s.durationSec || 0) > 0 ||
+      (s.distanceM || 0) > 0 || (s.steps || 0) > 0 || (s.floors || 0) > 0
+    )).length;
   if (droppedWithData && !confirm(`${droppedWithData} unchecked set${droppedWithData === 1 ? '' : 's'} will be discarded. Finish anyway?`)) return;
   endRest();
   if (state.wTimer) { clearInterval(state.wTimer); state.wTimer = null; }
@@ -987,7 +1043,6 @@ function wireEvents() {
   $('btn-cancel-workout').addEventListener('click', () => { if (confirm('Discard this workout?')) cancelWorkout(); });
   $('btn-save-as-routine').addEventListener('click', saveCurrentAsRoutine);
 
-  $('btn-picker-close').addEventListener('click', closePicker);
   $('picker-search').addEventListener('input', renderPicker);
 
   $('btn-new-routine').addEventListener('click', createRoutineFlow);

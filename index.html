@@ -124,7 +124,7 @@
       <button class="ghost wide" id="btn-add-exercise">+ Add exercise</button>
       <div class="row-2" style="margin-top:10px">
         <button class="ghost" id="btn-save-as-routine">Save as routine</button>
-        <button class="ghost danger" id="btn-cancel-workout">Cancel</button>
+        <button class="ghost danger" id="btn-cancel-workout">Discard workout</button>
       </div>
     </section>
 
@@ -132,9 +132,10 @@
     <section id="screen-picker" class="screen hidden">
       <div class="picker-head">
         <input id="picker-search" placeholder="Search exercises…" autocomplete="off" />
-        <button class="ghost small" id="btn-picker-close">Back</button>
       </div>
-      <div class="chips" id="picker-filters"></div>
+      <div class="filter-group"><span>Muscle</span><div class="chips" id="picker-filters-muscle" aria-label="Filter by muscle"></div></div>
+      <div class="filter-group"><span>Equipment</span><div class="chips" id="picker-filters-equipment" aria-label="Filter by equipment"></div></div>
+      <div class="picker-count muted" id="picker-count"></div>
       <div id="picker-list"></div>
     </section>
 
