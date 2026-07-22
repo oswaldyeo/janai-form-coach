@@ -233,9 +233,8 @@ function startOccam(dayKey) {
 }
 
 function startRoutine(routineId, dayKey) {
-  const routine = routineId === OCCAM_ROUTINE.id
-    ? OCCAM_ROUTINE
-    : state.routines.find((r) => r.id === routineId);
+  const routine = BUILTIN_ROUTINES.find((r) => r.id === routineId)
+    || state.routines.find((r) => r.id === routineId);
   if (!routine) return;
   state.workout = routineToWorkout(routine, dayKey, { id: newWorkoutId(), startedAtMs: now() });
   openWorkout();

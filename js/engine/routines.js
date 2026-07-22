@@ -48,7 +48,32 @@ export const OCCAM_ROUTINE = Object.freeze({
   ],
 });
 
-export const BUILTIN_ROUTINES = [OCCAM_ROUTINE];
+// Os's live Hevy routine, copied on 22 Jul 2026. Keep the per-set templates
+// intact rather than collapsing them to one target weight/reps pair.
+export const OS_FULL_BODY_ROUTINE = Object.freeze({
+  id: 'os-full-body',
+  name: 'Os’ Full Body',
+  builtin: true,
+  source: 'Hevy · Full Body Occam Dumbbells',
+  defaultRestSec: 120,
+  days: [{
+    key: 'A',
+    name: 'Full workout',
+    exercises: [
+      { exerciseId: 'bench-press', sets: [{ weight: 52, reps: 12 }, { weight: 52, reps: 12 }, { weight: 52, reps: 12 }] },
+      { exerciseId: 'goblet-squat', sets: [{ weight: 26, reps: 12 }, { weight: 26, reps: 12 }, { weight: 26, reps: 12 }] },
+      { exerciseId: 'shoulder-press', sets: [{ weight: 36, reps: 12 }, { weight: 36, reps: 12 }, { weight: 36, reps: 12 }] },
+      { exerciseId: 'db-row', sets: [{ weight: 20, reps: 12 }, { weight: 20, reps: 12 }, { weight: 20, reps: 12 }] },
+      { exerciseId: 'skull-crusher', sets: [{ weight: 16, reps: 12 }, { weight: 16, reps: 12 }, { weight: 16, reps: 12 }] },
+      { exerciseId: 'bicep-curl', sets: [{ weight: 10, reps: 12 }, { weight: 10, reps: 12 }, { weight: 10, reps: 12 }] },
+      { exerciseId: 'cable-twist', sets: [{ weight: 16.5, reps: 12 }, { weight: 16.25, reps: 12 }, { weight: 16.25, reps: 12 }] },
+      { exerciseId: 'triceps-pushdown', sets: [{ weight: 18, reps: 12 }, { weight: 18, reps: 12 }, { weight: 18, reps: 12 }] },
+      { exerciseId: 'split-squat', sets: [{ weight: 24, reps: 12 }, { weight: 24, reps: 12 }, { weight: 24, reps: 12 }] },
+    ],
+  }],
+});
+
+export const BUILTIN_ROUTINES = [OS_FULL_BODY_ROUTINE, OCCAM_ROUTINE];
 
 /** Normalise a (possibly user-authored) routine into the canonical shape. */
 export function makeRoutine(partial = {}) {
@@ -73,11 +98,19 @@ export function makeRoutine(partial = {}) {
 }
 
 function normaliseRoutineExercise(re) {
+  const sets = Array.isArray(re.sets) && re.sets.length
+    ? re.sets.map((s) => ({
+      weight: s.weight == null ? null : Number(s.weight),
+      reps: s.reps == null ? 0 : Math.max(0, Math.round(s.reps)),
+      type: s.type || 'normal',
+    }))
+    : null;
   return {
     exerciseId: re.exerciseId,
-    targetSets: Math.max(1, Math.round(re.targetSets || 1)),
+    targetSets: sets ? sets.length : Math.max(1, Math.round(re.targetSets || 1)),
     targetReps: re.targetReps == null ? null : Math.max(1, Math.round(re.targetReps)),
     targetRestSec: re.targetRestSec == null ? null : Math.max(0, Math.round(re.targetRestSec)),
+    sets,
   };
 }
 
@@ -96,10 +129,13 @@ export function routineToWorkout(routine, dayKey, { id = null, startedAtMs = nul
   const day = getRoutineDay(routine, dayKey);
   const exercises = (day ? day.exercises : []).map((re) => ({
     exerciseId: re.exerciseId,
-    sets: Array.from({ length: re.targetSets || 1 }, () => ({
-      weight: null,
-      reps: 0,
-      type: 'normal',
+    sets: (Array.isArray(re.sets) && re.sets.length
+      ? re.sets
+      : Array.from({ length: re.targetSets || 1 }, () => ({ weight: null, reps: re.targetReps || 0 })))
+      .map((template) => ({
+      weight: template.weight ?? null,
+      reps: template.reps || 0,
+      type: template.type || 'normal',
       rpe: null,
       completed: false,
       source: 'manual',

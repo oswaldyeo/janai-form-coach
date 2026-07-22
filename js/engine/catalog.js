@@ -62,13 +62,13 @@ const CATALOG = [
     camera: { autoCount: 'reliable', confidence: 'high', view: 'side', formChecks: ['depth', 'torso-lean'], placement: 'Side-on, hip height, full body in frame.', notes: 'Goblet load barely occludes the legs — tracks like a bodyweight squat.' },
   },
   {
-    id: 'bench-press', name: 'Bench press', category: 'push', equipment: 'barbell',
+    id: 'bench-press', name: 'Bench press (dumbbell)', category: 'push', equipment: 'dumbbell',
     primaryMuscle: 'chest', secondaryMuscles: ['triceps', 'shoulders'],
     loadType: 'external', unilateral: false, defaultRestSec: 180,
     camera: { autoCount: 'reliable', confidence: 'medium', view: 'side', formChecks: ['touch-depth', 'lockout'], placement: 'Side-on at bench level, ~2 m, working arm nearest the camera.', notes: 'Bench/rack can occlude the far arm; frame the near, working side.' },
   },
   {
-    id: 'skull-crusher', name: 'Skull crusher', category: 'push', equipment: 'barbell',
+    id: 'skull-crusher', name: 'Skull crusher (dumbbell)', category: 'push', equipment: 'dumbbell',
     primaryMuscle: 'triceps', secondaryMuscles: [],
     loadType: 'external', unilateral: false, defaultRestSec: 120,
     camera: { autoCount: 'reliable', confidence: 'medium', view: 'side', formChecks: ['upper-arm-stability'], placement: 'Side-on at bench level, track the near arm.', notes: 'The near arm occludes the far one — the coach counts the near arm.' },
@@ -102,6 +102,11 @@ const CATALOG = [
     id: 'leg-press', name: 'Leg press', category: 'legs', equipment: 'machine',
     primaryMuscle: 'quads', secondaryMuscles: ['glutes', 'hamstrings'],
     loadType: 'external', unilateral: false, defaultRestSec: 120, camera: null,
+  },
+  {
+    id: 'split-squat', name: 'Split squat (dumbbell)', category: 'legs', equipment: 'dumbbell',
+    primaryMuscle: 'quads', secondaryMuscles: ['glutes', 'hamstrings'],
+    loadType: 'external', unilateral: true, defaultRestSec: 120, camera: null,
   },
   {
     id: 'romanian-deadlift', name: 'Romanian deadlift', category: 'pull', equipment: 'barbell',
