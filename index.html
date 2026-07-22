@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-  <meta name="theme-color" content="#090b10" />
+  <meta name="theme-color" content="#070708" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -18,7 +18,10 @@
 <body>
 <div id="app">
   <header>
-    <h1 id="app-title">Form Coach</h1>
+    <div class="head-left">
+      <button class="back-btn hidden" id="btn-back" aria-label="Go back">← <span>Back</span></button>
+      <h1 id="app-title">Form Coach</h1>
+    </div>
     <div class="head-right">
       <div class="pill" id="status">starting…</div>
       <button class="icon-btn" id="btn-settings" aria-label="Settings">⚙︎</button>
@@ -36,6 +39,7 @@
     <section id="tab-home" class="tab">
       <div class="hero card">
         <div class="label">Start training</div>
+        <button class="resume-btn hidden" id="btn-resume-workout">Resume active workout <span>→</span></button>
         <button class="primary" id="btn-start-empty">Start empty workout</button>
         <button class="ghost wide" id="btn-repeat-last">Repeat last workout</button>
       </div>
@@ -111,7 +115,7 @@
     <section id="screen-picker" class="screen hidden">
       <div class="picker-head">
         <input id="picker-search" placeholder="Search exercises…" autocomplete="off" />
-        <button class="ghost small" id="btn-picker-close">Close</button>
+        <button class="ghost small" id="btn-picker-close">Back</button>
       </div>
       <div class="chips" id="picker-filters"></div>
       <div id="picker-list"></div>

@@ -35,6 +35,7 @@ const now = () => Date.now();
 // ── app state ────────────────────────────────────────────────────────────────
 const state = {
   tab: 'home',
+  screen: null,
   settings: loadSettings(),
   history: [],
   routines: [],
@@ -111,6 +112,7 @@ function setTab(tab) {
 
 // Show one full-screen mode; hide tabs + nav. Passing null returns to tabs.
 function showScreen(id) {
+  state.screen = id || null;
   ['screen-workout', 'screen-picker', 'screen-summary'].forEach((s) => show($(s), s === id));
   const onScreen = !!id;
   show($('main'), true);
@@ -118,7 +120,21 @@ function showScreen(id) {
     if (onScreen) show($(t), false);
   });
   show($('bottomnav'), !onScreen && !inCoach());
+  show($('btn-back'), onScreen);
   if (!onScreen) setTab(state.tab);
+}
+
+function goBack() {
+  if (state.screen === 'screen-picker') return closePicker();
+  if (state.screen === 'screen-workout') {
+    persistActive();
+    showScreen(null);
+    return;
+  }
+  if (state.screen === 'screen-summary') {
+    showScreen(null);
+    setTab('home');
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -126,6 +142,7 @@ function showScreen(id) {
 // ════════════════════════════════════════════════════════════════════════════
 function renderHome() {
   $('occam-blurb').textContent = OCCAM_ROUTINE.disclaimer;
+  show($('btn-resume-workout'), !!state.workout);
   const el = $('home-recent');
   if (!el) return;
   if (!state.history.length) { el.innerHTML = '<div class="muted">No workouts yet. Start one above.</div>'; return; }
@@ -884,6 +901,8 @@ function wireEvents() {
   $('nav-history').addEventListener('click', () => setTab('history'));
 
   $('btn-start-empty').addEventListener('click', startEmptyWorkout);
+  $('btn-resume-workout').addEventListener('click', openWorkout);
+  $('btn-back').addEventListener('click', goBack);
   $('btn-repeat-last').addEventListener('click', startRepeatLast);
   $('btn-occam-a').addEventListener('click', () => startOccam('A'));
   $('btn-occam-b').addEventListener('click', () => startOccam('B'));

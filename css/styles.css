@@ -1,15 +1,15 @@
-/* Janai Form Coach — mobile-first. Dark theme, mint accent (#57e7ad). */
+/* Janai Form Coach — mobile-first. Dark theme with vivid red accents. */
 :root {
   color-scheme: dark;
-  --bg: #090b10;
-  --panel: #11141b;
-  --panel-2: #1a1e28;
-  --line: #222632;
-  --ink: #f7f7f8;
-  --muted: #858da0;
-  --muted-2: #aeb6c7;
-  --mint: #57e7ad;
-  --mint-ink: #06110d;
+  --bg: #070708;
+  --panel: #111113;
+  --panel-2: #1a1a1e;
+  --line: #2b2b31;
+  --ink: #f8f8fa;
+  --muted: #8e8e99;
+  --muted-2: #b8b8c2;
+  --mint: #ff334f;
+  --mint-ink: #ffffff;
   --warn: #ffcb69;
   --bad: #ff7878;
   --r: 16px;
@@ -40,7 +40,13 @@ header {
   padding: max(12px, env(safe-area-inset-top)) 16px 12px;
   gap: 10px;
 }
+.head-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
 header h1 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: .2px; }
+.back-btn {
+  display: inline-flex; align-items: center; gap: 5px; border: 0; padding: 8px 4px 8px 0;
+  background: transparent; color: var(--mint); font-size: 15px; font-weight: 750; cursor: pointer;
+}
+.back-btn:active { opacity: .7; }
 .pill {
   padding: 6px 11px; border-radius: 999px; background: var(--panel-2);
   font-size: 12px; color: var(--muted-2); white-space: nowrap;
@@ -79,7 +85,7 @@ header h1 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: .2px; 
   transition: border-color .12s, transform .06s;
 }
 .ex-card:active { transform: scale(.98); }
-.ex-card.selected { border-color: var(--mint); background: #14251d; }
+.ex-card.selected { border-color: var(--mint); background: #2a1117; }
 .ex-name { font-weight: 750; font-size: 15px; }
 .ex-sub { font-size: 12px; color: var(--muted); }
 
@@ -199,14 +205,21 @@ button.small { padding: 8px 12px; font-size: 13px; border-radius: 10px; }
   background: var(--panel-2); color: var(--muted-2); text-transform: uppercase; letter-spacing: .04em; vertical-align: middle;
 }
 .badge.experimental { background: #3a2a12; color: var(--warn); }
-.badge.pr { background: #123a24; color: var(--mint); }
-.badge.cam { background: #14251d; color: var(--mint); }
+.badge.pr { background: #3b1119; color: #ff8c9d; }
+.badge.cam { background: #2a1117; color: #ff8c9d; }
 .badge.manual { background: var(--panel-2); color: var(--muted); }
 .cam-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
 .cam-dot.high { background: var(--mint); } .cam-dot.med { background: var(--warn); } .cam-dot.low { background: var(--bad); }
 
 /* home hero */
 .hero .primary { margin: 10px 0 8px; }
+.resume-btn {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  margin: 10px 0 8px; padding: 15px 16px; border: 1px solid #7a2030; border-radius: 14px;
+  background: linear-gradient(135deg, #3b1119, #211014); color: #ff8c9d;
+  font-size: 15px; font-weight: 800; cursor: pointer;
+}
+.resume-btn + .primary { margin-top: 0; }
 
 /* bottom nav */
 #bottomnav {
@@ -254,7 +267,7 @@ button.small { padding: 8px 12px; font-size: 13px; border-radius: 10px; }
 .set-head, .set-row { display: grid; grid-template-columns: 44px 1fr 40px 42px 46px; gap: 6px; align-items: center; }
 .set-head { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; padding: 4px 0; }
 .set-row { padding: 5px 0; }
-.set-row.done .w-in, .set-row.done .r-in { border-color: #2a4d3b; }
+.set-row.done .w-in, .set-row.done .r-in { border-color: #7a2030; }
 .set-idx { display: flex; align-items: center; gap: 5px; font-weight: 700; color: var(--muted-2); font-size: 13px; }
 .side-btn { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel-2); color: var(--mint); font-size: 11px; font-weight: 700; cursor: pointer; }
 .set-load { display: flex; align-items: center; gap: 5px; }

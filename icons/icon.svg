@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#0c0f16"/>
-  <rect x="24" y="24" width="464" height="464" rx="92" fill="none" stroke="#1c2230" stroke-width="8"/>
-  <g fill="none" stroke="#57e7ad" stroke-width="26" stroke-linecap="round" stroke-linejoin="round">
+  <rect width="512" height="512" rx="112" fill="#070708"/>
+  <rect x="24" y="24" width="464" height="464" rx="92" fill="none" stroke="#2b2b31" stroke-width="8"/>
+  <g fill="none" stroke="#ff334f" stroke-width="26" stroke-linecap="round" stroke-linejoin="round">
     <!-- head -->
-    <circle cx="256" cy="132" r="34" fill="#57e7ad" stroke="none"/>
+    <circle cx="256" cy="132" r="34" fill="#ff334f" stroke="none"/>
     <!-- torso -->
     <path d="M256 178 L256 288"/>
     <!-- arms reaching forward (squat) -->
