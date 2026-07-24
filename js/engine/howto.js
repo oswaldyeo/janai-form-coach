@@ -232,17 +232,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Let the bar rise slowly with control until your arms are fully extended."
     ],
     "cues": "Lead with your elbows, not your hands. Don't jerk or use body swing to initiate the pull.",
-    "images": [
-      "./assets/howto/library/lat-pulldown-dafe0ae759/0.jpg",
-      "./assets/howto/library/lat-pulldown-24574801ca/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db/blob/main/exercises/Wide-Grip_Lat_Pulldown",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Wide-Grip Lat Pulldown",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "leg-press": {
     "steps": [
@@ -471,17 +463,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Pull the wheel back toward your knees using your abs."
     ],
     "cues": "The rollout should be controlled and slow — momentum defeats the purpose. Start with a short range and extend as you get stronger.",
-    "images": [
-      "./assets/howto/library/hevy-99d5f10e-26e3f294b4/0.jpg",
-      "./assets/howto/library/hevy-99d5f10e-723f3439ca/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db/blob/main/exercises/Ab_Roller",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Ab Roller",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-5e0ddace": {
     "steps": [
@@ -535,17 +519,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Reverse the arc back to the starting position."
     ],
     "cues": "Keep the movement slow and controlled — this is a mobility and shoulder exercise, not a power move. Use a very light load.",
-    "images": [
-      "./assets/howto/library/hevy-d4a2fe7e-7ffd5f182a/0.jpg",
-      "./assets/howto/library/hevy-d4a2fe7e-966e2528b2/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db/blob/main/exercises/Around_The_World",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Around The World",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-5bff35ba": {
     "steps": [
@@ -592,17 +568,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Raise your torso to a straight body line — stop there, don't hyperextend."
     ],
     "cues": "The load increases demand on your lower back and glutes. Keep the movement strict and slow.",
-    "images": [
-      "./assets/howto/library/hevy-091737fa-1f380e4a68/0.jpg",
-      "./assets/howto/library/hevy-091737fa-b6ecfb322d/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db/blob/main/exercises/Weighted_Back_Extension",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Weighted Back Extension",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-f51d9080": {
     "steps": [
@@ -624,17 +592,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Return slowly to the start with tension on the band."
     ],
     "cues": "Keep your arms at shoulder height throughout. Focus on the squeeze at the back — this is a rear delt and upper-back activation exercise.",
-    "images": [
-      "./assets/howto/library/hevy-e8d86ee8-97841c0346/0.jpg",
-      "./assets/howto/library/hevy-e8d86ee8-d99ebeb686/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db/blob/main/exercises/Band_Pull_Apart",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Band Pull Apart",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-084a67ca": {
     "steps": [
@@ -809,17 +769,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Squeeze at the top, then lower with control."
     ],
     "cues": "Keep your torso angle steady. Dumbbells allow a natural wrist rotation — use that if it feels better on your elbows.",
-    "images": [
-      "./assets/howto/library/hevy-23e92538-4ff4cfe47b/0.jpg",
-      "./assets/howto/library/hevy-23e92538-4c9bdf0962/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db/blob/main/exercises/Dumbbell_Bent_Over_Row",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Dumbbell Bent Over Row",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-eb813c91": {
     "steps": [
@@ -944,17 +896,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Drive back up through your whole foot."
     ],
     "cues": "The box is a depth cue and brief pause, not a seat to collapse into. Keep core braced on contact.",
-    "images": [
-      "./assets/howto/library/hevy-38fc1ab9-cb36e76221/0.jpg",
-      "./assets/howto/library/hevy-38fc1ab9-fdc32736ef/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db/blob/main/exercises/Box_Squat",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Box Squat",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-a0d8fa1b": {
     "steps": [
@@ -1048,17 +992,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Hold for a beat, then draw it back to your chest."
     ],
     "cues": "This is an anti-rotation exercise — resist the cable pulling you sideways. Don't let your hips rotate; that's the whole point.",
-    "images": [
-      "./assets/howto/library/hevy-cc55119b-1ceecc74be/0.jpg",
-      "./assets/howto/library/hevy-cc55119b-53fa67dd5b/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db/blob/main/exercises/Pallof_Press",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Pallof Press",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-23a48484": {
     "steps": [
@@ -1100,17 +1036,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Hinge back again under control."
     ],
     "cues": "This is a hip hinge pattern — the drive comes from the glutes and hamstrings, not your lower back. Keep your spine neutral.",
-    "images": [
-      "./assets/howto/library/hevy-8c331cd8-c439fcfac1/0.jpg",
-      "./assets/howto/library/hevy-8c331cd8-7f563d189b/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db/blob/main/exercises/Cable_Pull_Through",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Cable Pull Through",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-a2d838bd": {
     "steps": [
@@ -1271,17 +1199,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Lower under control."
     ],
     "cues": "The chest support removes lower-back involvement — focus entirely on your back. Elbows drive back, not up.",
-    "images": [
-      "./assets/howto/library/hevy-914f3a96-dea391e39d/0.jpg",
-      "./assets/howto/library/hevy-914f3a96-47764f6a5e/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db/blob/main/exercises/Incline_Dumbbell_Row",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Incline Dumbbell Row",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-b582299e": {
     "steps": [
@@ -1291,17 +1211,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Lower slowly."
     ],
     "cues": "Lead with your elbows, not your hands. Keep the weight very light — rear delts are small muscles. Don't shrug.",
-    "images": [
-      "./assets/howto/library/hevy-b582299e-962568026a/0.jpg",
-      "./assets/howto/library/hevy-b582299e-1d86a5bc9f/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db/blob/main/exercises/Bent_Over_Dumbbell_Reverse_Fly",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Bent Over Dumbbell Reverse Fly",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-6a8d3193": {
     "steps": [
@@ -1442,17 +1354,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Lower the bar back to the rack, then to the floor."
     ],
     "cues": "Unlike the clean-and-jerk, the press is strict — no leg drive. Use a conservative load until the pattern is solid.",
-    "images": [
-      "./assets/howto/library/hevy-d3095577-2ac55977fb/0.jpg",
-      "./assets/howto/library/hevy-d3095577-5f739e20c9/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db/blob/main/exercises/Clean_And_Press",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Clean and Press",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-652fea39": {
     "steps": [
@@ -1497,17 +1401,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Lower with control, then repeat on the other side."
     ],
     "cues": "Curl across your body, not straight up. Keep your upper arm still — no shoulder swing.",
-    "images": [
-      "./assets/howto/library/hevy-32c4d4a2-89c4b51d5d/0.jpg",
-      "./assets/howto/library/hevy-32c4d4a2-7501858d37/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db/blob/main/exercises/Cross_Body_Hammer_Curl",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Cross Body Hammer Curl",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-dcf3b31b": {
     "steps": [
@@ -1541,17 +1437,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Lower slowly."
     ],
     "cues": "Keep the weight at your chest, not behind your head — it increases load without straining your neck.",
-    "images": [
-      "./assets/howto/library/hevy-d928c232-147236bfd6/0.jpg",
-      "./assets/howto/library/hevy-d928c232-0981f27947/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db/blob/main/exercises/Weighted_Crunch",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Weighted Crunch",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-d39ec9eb": {
     "steps": [
@@ -1586,17 +1474,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Return both limbs before switching sides."
     ],
     "cues": "The lower back must stay pressed to the floor throughout. Move only as far as you can maintain that contact.",
-    "images": [
-      "./assets/howto/library/hevy-d8911fc4-31d71e2711/0.jpg",
-      "./assets/howto/library/hevy-d8911fc4-5c95dcd0c1/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db/blob/main/exercises/Dead_Bug",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Dead Bug",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-b9380898": {
     "steps": [
@@ -1653,17 +1533,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Lower with control by hinging at the hips and bending the knees."
     ],
     "cues": "The hex bar lets your torso stay more upright than a straight bar. It's often more comfortable for people learning the deadlift pattern.",
-    "images": [
-      "./assets/howto/library/hevy-b923b230-bf1471631f/0.jpg",
-      "./assets/howto/library/hevy-b923b230-15c11b4b8c/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db/blob/main/exercises/Trap_Bar_Deadlift",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Trap Bar Deadlift",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-fa5d0de1": {
     "steps": [
@@ -1703,17 +1575,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Press back to arm extension."
     ],
     "cues": "Decline limits shoulder impingement risk for some. Use a spotter or press from your thighs when setting up.",
-    "images": [
-      "./assets/howto/library/hevy-18487fa7-faca4d87d5/0.jpg",
-      "./assets/howto/library/hevy-18487fa7-34566b1148/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db/blob/main/exercises/Decline_Dumbbell_Bench_Press",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Decline Dumbbell Bench Press",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-faf31231": {
     "steps": [
@@ -1787,17 +1651,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Hold the contraction briefly, then lower with control."
     ],
     "cues": "Hold the load at chest — don't swing it to generate momentum. Lower back stays down.",
-    "images": [
-      "./assets/howto/library/hevy-b2398cd1-f60910e0e8/0.jpg",
-      "./assets/howto/library/hevy-b2398cd1-a7f5f3e68e/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Decline Crunch",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-c43825ea": {
     "steps": [
@@ -2371,17 +2227,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Lower with control and repeat, then switch sides."
     ],
     "cues": "Hips square to the floor — no rotation. The glute does the work, not the lower back.",
-    "images": [
-      "./assets/howto/library/hevy-987234ab-3f590ec075/0.jpg",
-      "./assets/howto/library/hevy-987234ab-5b9f14adb1/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Glute Kickback",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-4180c405": {
     "steps": [
@@ -4828,17 +4676,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Rotate side to side, touching the weight to the floor beside each hip."
     ],
     "cues": "The added weight makes the rotation harder. Use a weight that allows full rotation without losing your flat-back position.",
-    "images": [
-      "./assets/howto/library/hevy-2982aa23-71cc868504/0.jpg",
-      "./assets/howto/library/hevy-2982aa23-c827aa0dea/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Russian Twist",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-c7ae420a": {
     "steps": [
@@ -5558,17 +5398,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Pause at the top, then lower slowly."
     ],
     "cues": "Keep the weight close to your body. Lower slowly — the eccentric is where you earn the load.",
-    "images": [
-      "./assets/howto/library/hevy-9237ba12-4b45b2bdb4/0.jpg",
-      "./assets/howto/library/hevy-9237ba12-e5a54af776/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Sit-Up",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-24a809ef": {
     "steps": [
@@ -5907,17 +5739,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Lower with control to full heel stretch."
     ],
     "cues": "Same mechanics as bodyweight but heavier. Use a step or calf block for full range of motion.",
-    "images": [
-      "./assets/howto/library/hevy-e53ccbe5-5f5e1afa99/0.jpg",
-      "./assets/howto/library/hevy-e53ccbe5-9573b0c85f/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Barbell Standing Calf Raise",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-6da40660": {
     "steps": [
@@ -5927,17 +5751,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Lower with control to full heel stretch."
     ],
     "cues": "Full range beats heavy partial reps. If using a step edge, let the heels drop below step level at the bottom.",
-    "images": [
-      "./assets/howto/library/hevy-6da40660-e3c4d28d89/0.jpg",
-      "./assets/howto/library/hevy-6da40660-4261c4f608/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Dumbbell Calf Raise",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-aa52e8d2": {
     "steps": [
@@ -6028,17 +5844,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Pause at the bottom, then slowly return to the start."
     ],
     "cues": "Arms stay straight — this is a lat isolation, not a row. Lead with your lats pulling the arms down.",
-    "images": [
-      "./assets/howto/library/hevy-d2387ab1-b80d42f853/0.jpg",
-      "./assets/howto/library/hevy-d2387ab1-484f7355b1/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Straight-Arm Pulldown",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-2a48e443": {
     "steps": [
@@ -6048,17 +5856,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Drive your hips forward to return to standing; do not round the lower back."
     ],
     "cues": "Push hips back, not knees forward. Keep the bar close to your legs throughout. Stop before your lower back rounds.",
-    "images": [
-      "./assets/howto/library/hevy-2a48e443-dcb128936c/0.jpg",
-      "./assets/howto/library/hevy-2a48e443-68fa9f630c/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Stiff-Legged Deadlift",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-527da061": {
     "steps": [
@@ -6279,17 +6079,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Press back to full arm extension."
     ],
     "cues": "Stay upright — don't lean forward (that shifts load to chest). Keep elbows close to your torso throughout.",
-    "images": [
-      "./assets/howto/library/hevy-28bb4a95-0d6544229e/0.jpg",
-      "./assets/howto/library/hevy-28bb4a95-091d9d7663/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Dips - Triceps Version",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-4b4bf8c2": {
     "steps": [
@@ -6347,17 +6139,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Complete all reps, then lower the weight safely."
     ],
     "cues": "Upper arms stay fixed — only forearms move. Lower slowly for a full triceps stretch.",
-    "images": [
-      "./assets/howto/library/hevy-3765684d-8065f2a60d/0.jpg",
-      "./assets/howto/library/hevy-3765684d-a6d3c7d0ca/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Lying Dumbbell Tricep Extension",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-3092fadd": {
     "steps": [
@@ -6415,17 +6199,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Squeeze the triceps at the bottom; let the bar rise slowly."
     ],
     "cues": "Keep elbows pinned and don't let them flare. Full extension at the bottom is the rep — don't stop short.",
-    "images": [
-      "./assets/howto/library/hevy-cdc472b1-487e5ad16c/0.jpg",
-      "./assets/howto/library/hevy-cdc472b1-be0dd5db36/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Pushdown",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-94b7239b": {
     "steps": [
@@ -6532,17 +6308,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Continue walking forward, alternating legs."
     ],
     "cues": "Keep your torso tall and front knee tracking over your toes. Take a stride long enough to stay balanced.",
-    "images": [
-      "./assets/howto/library/hevy-32hkj34k-2183de8372/0.jpg",
-      "./assets/howto/library/hevy-32hkj34k-ca094ca836/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Walking Lunge",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-a733cc5b": {
     "steps": [
@@ -6669,17 +6437,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Drive up through your full foot to return to standing."
     ],
     "cues": "Keep elbows up and the bar pressed against your chest. Torso stays upright — the position forces a more upright squat.",
-    "images": [
-      "./assets/howto/library/hevy-40c6a9fc-fcb67038f4/0.jpg",
-      "./assets/howto/library/hevy-40c6a9fc-bb2088f8be/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Zercher Squat",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   },
   "hevy-123ee239": {
     "steps": [
@@ -6690,17 +6450,9 @@ export const HOWTO_BY_ID = Object.freeze({
       "Rotate palms forward at the bottom to start the next rep."
     ],
     "cues": "Slow the lowering phase — reverse curl is much harder and where the forearm work happens. Full extension at the bottom.",
-    "images": [
-      "./assets/howto/library/hevy-123ee239-53249c6866/0.jpg",
-      "./assets/howto/library/hevy-123ee239-555218d350/1.jpg"
-    ],
+    "images": [],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db",
-    "visualSource": {
-      "library": "yuhonas/free-exercise-db",
-      "exercise": "Dumbbell Zottman Curl",
-      "url": "https://github.com/yuhonas/free-exercise-db",
-      "license": "Public domain (Unlicense)"
-    }
+    "visualSource": null
   }
 });
 
