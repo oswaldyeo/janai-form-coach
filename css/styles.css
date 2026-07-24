@@ -23,6 +23,14 @@ body {
   color: var(--ink);
   overscroll-behavior: none;
 }
+/* Opaque strip over the status-bar inset (viewport-fit=cover): sticky bars sit
+   below it, so scrolling content disappears under the clock instead of
+   colliding with it. Zero-height off-notch devices and desktop. */
+body::before {
+  content: ""; position: fixed; top: 0; left: 0; right: 0;
+  height: env(safe-area-inset-top, 0px); background: var(--bg);
+  z-index: 5; pointer-events: none;
+}
 .hidden { display: none !important; }
 .muted { color: var(--muted); font-size: 13px; }
 
@@ -332,11 +340,15 @@ button.small { min-height: 40px; padding: 8px 12px; font-size: 13px; border-radi
 .wstats { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--muted-2); }
 
 /* ── active workout ─────────────────────────────────────────────────────── */
+/* Sticky bars offset by the notch inset: with viewport-fit=cover, top:0 is
+   BEHIND the iOS status bar. The body::before scrim hides content scrolling
+   through the inset strip above them. */
 .workout-head {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  position: sticky; top: 0; z-index: 4; background: var(--bg); padding: 8px 0 10px;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 4; background: var(--bg); padding: 8px 0 10px;
 }
-.w-title { font-size: 18px; font-weight: 800; }
+.workout-head > div:first-child { min-width: 0; flex: 1; }
+.w-title { font-size: 18px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .finish { min-height: 44px; background: var(--mint); color: var(--mint-ink); border: 0; border-radius: 12px; padding: 12px 18px; font-weight: 800; cursor: pointer; }
 .finish:disabled { opacity: 1; background: var(--panel-2); color: var(--muted); border: 1px solid var(--line); }
 
@@ -428,7 +440,7 @@ button.small { min-height: 40px; padding: 8px 12px; font-size: 13px; border-radi
 #btn-cancel-workout { color: var(--muted-2); border-color: var(--line); }
 
 /* ── exercise picker ────────────────────────────────────────────────────── */
-.picker-head { display: flex; gap: 8px; align-items: center; position: sticky; top: 0; z-index: 4; background: var(--bg); padding: 8px 0; }
+.picker-head { display: flex; gap: 8px; align-items: center; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 4; background: var(--bg); padding: 8px 0; }
 #picker-search { flex: 1; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); padding: 12px; font-size: 16px; }
 .chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 8px; -webkit-overflow-scrolling: touch; touch-action: pan-x; }
 .filter-group > span { display: block; margin: 2px 0 5px; color: var(--muted); font-size: 10px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
