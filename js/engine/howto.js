@@ -2145,13 +2145,13 @@ export const HOWTO_BY_ID = Object.freeze({
     ],
     "cues": "Drive through the heels, not the toes. Don't over-arch your lower back — the lift comes from the glutes.",
     "images": [
-      "./assets/howto/hevy-cda23948/0.jpg",
-      "./assets/howto/hevy-cda23948/1.jpg"
+      "./assets/howto/library/hevy-cda23948-36c062c630/0.jpg",
+      "./assets/howto/library/hevy-cda23948-d9d783d340/1.jpg"
     ],
     "guidanceSource": "howto.js",
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
-      "exercise": "Barbell Glute Bridge",
+      "exercise": "Butt Lift (Bridge)",
       "url": "https://github.com/yuhonas/free-exercise-db",
       "license": "Public domain (Unlicense)"
     }

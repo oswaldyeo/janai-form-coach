@@ -35,7 +35,7 @@ Public demonstrations come from [`yuhonas/free-exercise-db`](https://github.com/
 | `hevy-dbb91a3c` | Front Raise (Cable) | Front Cable Raise · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
 | `hevy-5046d0a9` | Front Squat | Front Barbell Squat · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
 | `hevy-1283bba6` | Full Squat | Barbell Full Squat · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
-| `hevy-cda23948` | Glute Bridge | Barbell Glute Bridge · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
+| `hevy-cda23948` | Glute Bridge | Butt Lift (Bridge) · yuhonas/free-exercise-db | Public domain (Unlicense) · reviewed-replacement |
 | `hevy-49c922a1` | Glute Bridge (Barbell) | Barbell Glute Bridge · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
 | `hevy-68b83ee0` | Glute Ham Raise | Glute Ham Raise · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
 | `hevy-cba02382` | Glute Kickback (Machine) | Glute Kickback · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
