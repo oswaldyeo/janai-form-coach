@@ -16,7 +16,7 @@
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; }
+html, body { height: 100%; max-width: 100%; overflow-x: clip; }
 body {
   margin: 0;
   background: var(--bg);
@@ -213,8 +213,12 @@ button:focus-visible, input:focus-visible, .chip:focus-visible, a:focus-visible 
 
 /* main content column; leaves room for the fixed bottom nav.
    pan-y: vertical scroll stays native, horizontal deltas feed swipe nav. */
-#main { position: relative; z-index: 3; flex: 1; padding: 0 16px calc(84px + env(safe-area-inset-bottom)); touch-action: pan-y; }
-.tab, .screen { display: flex; flex-direction: column; gap: 14px; padding-top: 4px; }
+#main {
+  position: relative; z-index: 3; flex: 1; width: 100%; min-width: 0;
+  padding: 0 16px calc(84px + env(safe-area-inset-bottom));
+  overflow-x: clip; touch-action: pan-y;
+}
+.tab, .screen { display: flex; flex-direction: column; width: 100%; min-width: 0; gap: 14px; padding-top: 4px; }
 
 /* screen/tab entry transitions — display:none → flex restarts these on show.
    Tabs slide in from the side they live on (set by js setTab); full-screen
@@ -336,7 +340,10 @@ button.small { min-height: 40px; padding: 8px 12px; font-size: 13px; border-radi
 .finish { min-height: 44px; background: var(--mint); color: var(--mint-ink); border: 0; border-radius: 12px; padding: 12px 18px; font-weight: 800; cursor: pointer; }
 .finish:disabled { opacity: 1; background: var(--panel-2); color: var(--muted); border: 1px solid var(--line); }
 
-.ex-card2 { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; margin-bottom: 12px; }
+.ex-card2 {
+  width: 100%; max-width: 100%; min-width: 0;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; margin-bottom: 12px;
+}
 .ex-head { display: flex; align-items: center; justify-content: space-between; }
 .ex-head b { font-size: 15px; }
 .ex-title { display: flex; align-items: center; gap: 4px; min-width: 0; }

@@ -19,7 +19,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Bodyweight Squat",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "pushup": {
@@ -39,7 +40,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Pushups",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "lunge": {
@@ -72,7 +74,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Dumbbell Bicep Curl",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "shoulder-press": {
@@ -91,7 +94,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Dumbbell Shoulder Press",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "goblet-squat": {
@@ -111,7 +115,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Goblet Squat",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "bench-press": {
@@ -131,7 +136,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Dumbbell Bench Press",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "skull-crusher": {
@@ -150,7 +156,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Lying Dumbbell Tricep Extension",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "triceps-pushdown": {
@@ -170,7 +177,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Triceps Pushdown",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "db-row": {
@@ -190,7 +198,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "One-Arm Dumbbell Row",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "cable-twist": {
@@ -202,9 +211,17 @@ export const HOWTO_BY_ID = Object.freeze({
       "Return slowly and with control, then repeat on the other side."
     ],
     "cues": "Rotate through your upper body while keeping your lower back controlled. Keep your arms relatively straight and resist the cable on the return.",
-    "images": [],
+    "images": [
+      "./assets/howto/original/cable-twist/0.svg",
+      "./assets/howto/original/cable-twist/1.svg"
+    ],
     "guidanceSource": "https://www.acefitness.org/resources/everyone/exercise-library/",
-    "visualSource": null
+    "visualSource": {
+      "library": "Form Coach original",
+      "exercise": "Original movement diagram",
+      "url": null,
+      "license": "Original artwork"
+    }
   },
   "lat-pulldown": {
     "steps": [
@@ -248,7 +265,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Split Squats",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "romanian-deadlift": {
@@ -268,7 +286,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Romanian Deadlift",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "deadlift": {
@@ -289,7 +308,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Barbell Deadlift",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "calf-raise": {
@@ -308,7 +328,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Standing Calf Raises",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "plank": {
@@ -327,7 +348,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Plank",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "straight-leg-raise": {
@@ -338,9 +360,17 @@ export const HOWTO_BY_ID = Object.freeze({
       "Hold for a beat, then lower slowly."
     ],
     "cues": "Keep the knee locked straight the whole time. Move slowly — no swinging.",
-    "images": [],
+    "images": [
+      "./assets/howto/original/straight-leg-raise/0.svg",
+      "./assets/howto/original/straight-leg-raise/1.svg"
+    ],
     "guidanceSource": "https://www.acefitness.org/resources/everyone/exercise-library/",
-    "visualSource": null
+    "visualSource": {
+      "library": "Form Coach original",
+      "exercise": "Original movement diagram",
+      "url": null,
+      "license": "Original artwork"
+    }
   },
   "step-down": {
     "steps": [
@@ -350,9 +380,17 @@ export const HOWTO_BY_ID = Object.freeze({
       "Push back up through the standing heel."
     ],
     "cues": "The slow lowering (eccentric) phase is the whole point — 3 seconds down. Knee tracks forward, never dives inward. This is the key lift for pain going up stairs.",
-    "images": [],
+    "images": [
+      "./assets/howto/original/step-down/0.svg",
+      "./assets/howto/original/step-down/1.svg"
+    ],
     "guidanceSource": "https://www.physio-pedia.com/Step_Down_Test",
-    "visualSource": null
+    "visualSource": {
+      "library": "Form Coach original",
+      "exercise": "Original movement diagram",
+      "url": null,
+      "license": "Original artwork"
+    }
   },
   "spanish-squat": {
     "steps": [
@@ -362,9 +400,17 @@ export const HOWTO_BY_ID = Object.freeze({
       "Hold; log the seconds in the reps field."
     ],
     "cues": "Shins stay vertical, weight in your heels, keep breathing through the hold.",
-    "images": [],
+    "images": [
+      "./assets/howto/original/spanish-squat/0.svg",
+      "./assets/howto/original/spanish-squat/1.svg"
+    ],
     "guidanceSource": "https://www.physio-pedia.com/Spanish_Squat",
-    "visualSource": null
+    "visualSource": {
+      "library": "Form Coach original",
+      "exercise": "Original movement diagram",
+      "url": null,
+      "license": "Original artwork"
+    }
   },
   "single-leg-balance": {
     "steps": [
@@ -373,9 +419,17 @@ export const HOWTO_BY_ID = Object.freeze({
       "Progress by closing your eyes or standing on a cushion."
     ],
     "cues": "Keep your hips level — don't let one side drop. Knee stays soft and over the toes.",
-    "images": [],
+    "images": [
+      "./assets/howto/original/single-leg-balance/0.svg",
+      "./assets/howto/original/single-leg-balance/1.svg"
+    ],
     "guidanceSource": "https://www.physio-pedia.com/Single_Leg_Stance",
-    "visualSource": null
+    "visualSource": {
+      "library": "Form Coach original",
+      "exercise": "Original movement diagram",
+      "url": null,
+      "license": "Original artwork"
+    }
   },
   "hevy-3bc06ad3": {
     "steps": [
@@ -453,7 +507,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Arnold Dumbbell Press",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-d4a2fe7e": {
@@ -666,7 +721,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Close-Grip Barbell Bench Press",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-e644f828": {
@@ -744,7 +800,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Barbell Curl",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-ada8623c": {
@@ -955,7 +1012,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Cable Crunch",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-651f844c": {
@@ -1081,7 +1139,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Dumbbell Flyes",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-78683336": {
@@ -1196,7 +1255,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Chin-Up",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-d23c609b": {
@@ -1230,9 +1290,17 @@ export const HOWTO_BY_ID = Object.freeze({
       "Pause at the top, then lower slowly."
     ],
     "cues": "The motion comes from the hip — keep your torso and pelvis from rolling back. Add a band above the knees to progress.",
-    "images": [],
+    "images": [
+      "./assets/howto/original/hevy-cc016611/0.svg",
+      "./assets/howto/original/hevy-cc016611/1.svg"
+    ],
     "guidanceSource": "https://www.acefitness.org/resources/everyone/exercise-library/",
-    "visualSource": null
+    "visualSource": {
+      "library": "Form Coach original",
+      "exercise": "Original movement diagram",
+      "url": null,
+      "license": "Original artwork"
+    }
   },
   "hevy-10d76e8f": {
     "steps": [
@@ -1263,7 +1331,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Power Clean",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-9e09cec3": {
@@ -1495,7 +1564,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Decline Barbell Bench Press",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-18487fa7": {
@@ -1548,7 +1618,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Decline Dumbbell Flyes",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-bc10a922": {
@@ -1568,7 +1639,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Decline Crunch",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-b2398cd1": {
@@ -1600,7 +1672,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Decline Push-Up",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-6575f52d": {
@@ -1644,7 +1717,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Drag Curl",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-afc29472": {
@@ -1714,7 +1788,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Dumbbell Step Ups",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-a01be509": {
@@ -1734,7 +1809,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Elbow to Knee",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-3303376c": {
@@ -1753,7 +1829,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Elliptical Trainer",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-01a35bf9": {
@@ -1772,7 +1849,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "EZ-Bar Curl",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-be640ba0": {
@@ -1792,7 +1870,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Face Pull",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-50c613d0": {
@@ -1811,7 +1890,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Farmer's Walk",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-867ac3b6": {
@@ -1856,7 +1936,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Floor Press",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-756ee329": {
@@ -1984,7 +2065,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Front Cable Raise",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-8293e554": {
@@ -2028,7 +2110,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Front Barbell Squat",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-1283bba6": {
@@ -2048,7 +2131,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Barbell Full Squat",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-cda23948": {
@@ -2068,7 +2152,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Barbell Glute Bridge",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-49c922a1": {
@@ -2088,7 +2173,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Barbell Glute Bridge",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-68b83ee0": {
@@ -2108,7 +2194,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Glute Ham Raise",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-cba02382": {
@@ -2128,7 +2215,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Glute Kickback",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-987234ab": {
@@ -2160,7 +2248,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Good Morning",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-05487216": {
@@ -2204,7 +2293,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Hack Squat",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-1d4b3d6b": {
@@ -2247,7 +2337,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Alternate Hammer Curl",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-be3615cf": {
@@ -2279,7 +2370,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Handstand Push-Ups",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-bd4e7e53": {
@@ -2299,7 +2391,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Hang Clean",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-f4e77594": {
@@ -2319,7 +2412,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Hang Snatch",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-08590920": {
@@ -2350,7 +2444,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Hanging Leg Raise",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-567fb505": {
@@ -2504,7 +2599,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Barbell Hip Thrust",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-da5430fc": {
@@ -2571,7 +2667,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Barbell Incline Bench Press - Medium Grip",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-07b38369": {
@@ -2591,7 +2688,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Incline Dumbbell Press",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-3a6fa3d1": {
@@ -2610,7 +2708,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Smith Machine Incline Bench Press",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-d3e2ab55": {
@@ -2629,7 +2728,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Incline Dumbbell Flyes",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-fbf92739": {
@@ -2661,7 +2761,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Incline Push-Up",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-425805f4": {
@@ -2680,7 +2781,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Inverted Row",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-24706dcd": {
@@ -2756,7 +2858,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Jackknife Sit-Up",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-74103f24": {
@@ -2775,7 +2878,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "JM Press",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-040ba2e3": {
@@ -2794,7 +2898,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Rope Jumping",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-ba3de542": {
@@ -2825,7 +2930,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Freehand Jump Squat",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-991833c2": {
@@ -2949,7 +3055,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "One-Arm Kettlebell Snatch",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-f8a0fcca": {
@@ -2982,7 +3089,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Kettlebell Turkish Get-Up (Lunge style)",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-a91838c0": {
@@ -3013,7 +3121,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Knee/Hip Raise On Parallel Bars",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-d82ea543": {
@@ -3069,7 +3178,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Landmine 180's",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-d7d7fcce": {
@@ -3136,7 +3246,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Close-Grip Front Lat Pulldown",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-ec02979e": {
@@ -3147,9 +3258,17 @@ export const HOWTO_BY_ID = Object.freeze({
       "Do equal steps each direction."
     ],
     "cues": "Stay low, toes pointing forward, and never let your knees cave inward.",
-    "images": [],
+    "images": [
+      "./assets/howto/original/hevy-ec02979e/0.svg",
+      "./assets/howto/original/hevy-ec02979e/1.svg"
+    ],
     "guidanceSource": "howto.js",
-    "visualSource": null
+    "visualSource": {
+      "library": "Form Coach original",
+      "exercise": "Original movement diagram",
+      "url": null,
+      "license": "Original artwork"
+    }
   },
   "hevy-07ebc4dc": {
     "steps": [
@@ -3167,7 +3286,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Lateral Box Jump",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-dc59d143": {
@@ -3185,8 +3305,9 @@ export const HOWTO_BY_ID = Object.freeze({
     "guidanceSource": "howto.js",
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
-      "exercise": "Previously verified free-exercise-db match",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "exercise": "Previously verified exercise demo",
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-f2a37357": {
@@ -3277,7 +3398,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Leg Extensions",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-0eb695c9": {
@@ -3345,7 +3467,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Barbell Lunge",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-b537d09f": {
@@ -3364,7 +3487,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Dumbbell Lunges",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-bd5935cf": {
@@ -3395,7 +3519,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Lying Leg Curls",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-09c9f635": {
@@ -3414,7 +3539,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Flat Bench Lying Leg Raise",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-22fedca4": {
@@ -3492,7 +3618,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Mountain Climbers",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-9f9c164b": {
@@ -3511,7 +3638,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Muscle Up",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-f60bddf8": {
@@ -3554,7 +3682,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Oblique Crunches",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-b140095e": {
@@ -3656,7 +3785,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Overhead Squat",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-b5efbf9c": {
@@ -3675,7 +3805,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Cable Rope Overhead Triceps Extension",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-fbee8279": {
@@ -3846,7 +3977,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Power Clean",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-e22f9358": {
@@ -3865,7 +3997,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Power Snatch",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-4f942934": {
@@ -3884,7 +4017,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Preacher Curl",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-fab6eb2f": {
@@ -3939,7 +4073,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Pullups",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-2c37ec5e": {
@@ -3958,7 +4093,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Band Assisted Pull-Up",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-56808fd2": {
@@ -3977,7 +4113,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Band Assisted Pull-Up",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-729237d1": {
@@ -3996,7 +4133,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Weighted Pull Ups",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-67280085": {
@@ -4015,7 +4153,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Bent-Arm Dumbbell Pullover",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-b123dd01": {
@@ -4046,7 +4185,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Push Press",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-19372abc": {
@@ -4088,7 +4228,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Rack Pulls",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-c315dc2a": {
@@ -4153,7 +4294,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Recumbent Bike",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-1b89ca1b": {
@@ -4172,7 +4314,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Alternating Renegade Row",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-7952b5cd": {
@@ -4191,7 +4334,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Reverse Crunch",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-112fc6b7": {
@@ -4233,7 +4377,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Standing Dumbbell Reverse Curl",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-9264ada1": {
@@ -4288,7 +4433,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Reverse Grip Triceps Pushdown",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-7c0028c3": {
@@ -4307,7 +4453,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Reverse Hyperextension",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-c284d923": {
@@ -4325,8 +4472,9 @@ export const HOWTO_BY_ID = Object.freeze({
     "guidanceSource": "authored",
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
-      "exercise": "Previously verified free-exercise-db match",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "exercise": "Previously verified exercise demo",
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-818ba121": {
@@ -4393,7 +4541,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Ring Dips",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-5f09f0fc": {
@@ -4436,7 +4585,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Romanian Deadlift",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-0b9b92ba": {
@@ -4515,7 +4665,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Russian Twist",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-2982aa23": {
@@ -4580,7 +4731,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Seated Cable Rows",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-c3bcabb3": {
@@ -4623,7 +4775,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Seated Calf Raise",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-6b4c797e": {
@@ -4654,7 +4807,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Dip Machine",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-8bab2735": {
@@ -4673,7 +4827,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Incline Dumbbell Curl",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-c01f58d1": {
@@ -4716,7 +4871,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Seated Leg Curl",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-91af29e0": {
@@ -4735,7 +4891,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Seated Barbell Military Press",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-9930df71": {
@@ -4801,7 +4958,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Seated Triceps Press",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-95f2e076": {
@@ -4869,7 +5027,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Barbell Shrug",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-ffabc123": {
@@ -4900,7 +5059,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Dumbbell Shrug",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-19a38071": {
@@ -4955,7 +5115,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Dumbbell Side Bend",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-e3eda509": {
@@ -5441,7 +5602,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Barbell Squat",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-dcff3e9f": {
@@ -5460,7 +5622,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Dumbbell Squat",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-cc35a01f": {
@@ -5564,7 +5727,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Standing Calf Raises",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-e53ccbe5": {
@@ -5631,7 +5795,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Standing Military Press",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-28927a36": {
@@ -5736,7 +5901,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Sumo Deadlift",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-3f5f8d40": {
@@ -5803,7 +5969,8 @@ export const HOWTO_BY_ID = Object.freeze({
     "visualSource": {
       "library": "yuhonas/free-exercise-db",
       "exercise": "Superman",
-      "url": "https://github.com/yuhonas/free-exercise-db"
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
     }
   },
   "hevy-b60a678f": {
@@ -6189,9 +6356,17 @@ export const HOWTO_BY_ID = Object.freeze({
       "Hold; log the seconds in the reps field."
     ],
     "cues": "Weight in your heels. Only go as deep as stays pain-free, then progress toward 90° over time.",
-    "images": [],
+    "images": [
+      "./assets/howto/original/hevy-c8706c80/0.svg",
+      "./assets/howto/original/hevy-c8706c80/1.svg"
+    ],
     "guidanceSource": "https://www.acefitness.org/resources/everyone/exercise-library/",
-    "visualSource": null
+    "visualSource": {
+      "library": "Form Coach original",
+      "exercise": "Original movement diagram",
+      "url": null,
+      "license": "Original artwork"
+    }
   },
   "hevy-79ef4e4f": {
     "steps": [

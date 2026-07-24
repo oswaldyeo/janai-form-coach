@@ -1,0 +1,98 @@
+{
+  "cable-twist": {
+    "images": [
+      "./assets/howto/original/cable-twist/0.svg",
+      "./assets/howto/original/cable-twist/1.svg"
+    ],
+    "visualSource": {
+      "library": "Form Coach original",
+      "exercise": "Original movement diagram",
+      "url": null,
+      "license": "Original artwork"
+    }
+  },
+  "hevy-cc016611": {
+    "images": [
+      "./assets/howto/original/hevy-cc016611/0.svg",
+      "./assets/howto/original/hevy-cc016611/1.svg"
+    ],
+    "visualSource": {
+      "library": "Form Coach original",
+      "exercise": "Original movement diagram",
+      "url": null,
+      "license": "Original artwork"
+    }
+  },
+  "hevy-ec02979e": {
+    "images": [
+      "./assets/howto/original/hevy-ec02979e/0.svg",
+      "./assets/howto/original/hevy-ec02979e/1.svg"
+    ],
+    "visualSource": {
+      "library": "Form Coach original",
+      "exercise": "Original movement diagram",
+      "url": null,
+      "license": "Original artwork"
+    }
+  },
+  "straight-leg-raise": {
+    "images": [
+      "./assets/howto/original/straight-leg-raise/0.svg",
+      "./assets/howto/original/straight-leg-raise/1.svg"
+    ],
+    "visualSource": {
+      "library": "Form Coach original",
+      "exercise": "Original movement diagram",
+      "url": null,
+      "license": "Original artwork"
+    }
+  },
+  "hevy-c8706c80": {
+    "images": [
+      "./assets/howto/original/hevy-c8706c80/0.svg",
+      "./assets/howto/original/hevy-c8706c80/1.svg"
+    ],
+    "visualSource": {
+      "library": "Form Coach original",
+      "exercise": "Original movement diagram",
+      "url": null,
+      "license": "Original artwork"
+    }
+  },
+  "step-down": {
+    "images": [
+      "./assets/howto/original/step-down/0.svg",
+      "./assets/howto/original/step-down/1.svg"
+    ],
+    "visualSource": {
+      "library": "Form Coach original",
+      "exercise": "Original movement diagram",
+      "url": null,
+      "license": "Original artwork"
+    }
+  },
+  "spanish-squat": {
+    "images": [
+      "./assets/howto/original/spanish-squat/0.svg",
+      "./assets/howto/original/spanish-squat/1.svg"
+    ],
+    "visualSource": {
+      "library": "Form Coach original",
+      "exercise": "Original movement diagram",
+      "url": null,
+      "license": "Original artwork"
+    }
+  },
+  "single-leg-balance": {
+    "images": [
+      "./assets/howto/original/single-leg-balance/0.svg",
+      "./assets/howto/original/single-leg-balance/1.svg"
+    ],
+    "visualSource": {
+      "library": "Form Coach original",
+      "exercise": "Original movement diagram",
+      "url": null,
+      "license": "Original artwork"
+    }
+  }
+}

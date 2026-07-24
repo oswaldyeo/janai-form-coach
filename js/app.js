@@ -721,7 +721,9 @@ function openHowto(id) {
   show($('howto-images'), howto.images.length > 0);
   const visualSource = howto.visualSource;
   $('howto-source').textContent = visualSource
-    ? `Public-domain demo: ${visualSource.exercise} · free-exercise-db`
+    ? (visualSource.library === 'Form Coach original'
+      ? `${visualSource.exercise} · Form Coach original artwork`
+      : `Public-domain demo: ${visualSource.exercise} · free-exercise-db`)
     : '';
   show($('howto-source'), !!visualSource);
   $('howto-steps').innerHTML = howto.steps.map((step) => `<li>${esc(step)}</li>`).join('');
