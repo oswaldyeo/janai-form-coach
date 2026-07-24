@@ -7,6 +7,7 @@
 // MediaPipe, timers, storage. No LLM in any hot path.
 
 import { getExercise } from './engine/exercises.js';
+import { getHowto } from './engine/howto.js';
 import {
   CATALOG_LIST, getCatalogEntry, hasCamera, isExperimentalCamera, searchCatalog, MUSCLES, EQUIPMENT,
 } from './engine/catalog.js';
@@ -14,11 +15,13 @@ import { RepEngine } from './engine/rep-engine.js';
 import { calibrate } from './engine/calibration.js';
 import { SessionRecorder, toWorkoutExportDocument } from './engine/session.js';
 import {
-  makeWorkout, addExercise, removeExercise, addSet, removeSet, updateSet,
+  makeWorkout, addExercise, removeExercise, reorderExercise, addSet, removeSet, reorderSet, updateSet,
   workoutVolume, completedSetCount, totalReps, workoutDurationSec,
   summarize, newPRsInWorkout, previousSets, pruneIncompleteSets,
   nextLoadSuggestion, cadenceScore, SET_TYPES,
 } from './engine/workout.js';
+import { adjacentTab } from './engine/gestures.js';
+import { attachRipple, attachSwipeNav, dragSession } from './interactions.js';
 import {
   BUILTIN_ROUTINES, OCCAM_ROUTINE, OS_FULL_BODY_ROUTINE, routineToWorkout, repeatWorkout, workoutToRoutine, makeRoutine,
 } from './engine/routines.js';
@@ -55,7 +58,10 @@ const state = {
   rest: { timer: null, endsAt: 0 },
   lastCue: '',
   lastSpokenAt: 0,
+  armedDelete: null,      // { row, btn, dismiss, timer } — long-press set delete
 };
+
+const TAB_ORDER = ['home', 'routines', 'history'];
 
 const video = $('video');
 const canvas = $('overlay');
@@ -119,6 +125,17 @@ function inCoach() { return !!state.coach; }
 function inWorkoutScreen() { return !$('screen-workout').classList.contains('hidden'); }
 
 function setTab(tab) {
+  // Directional slide: the incoming tab enters from the side it lives on.
+  // Same-tab refreshes (e.g. returning from a full-screen mode) just fade.
+  const prevIdx = TAB_ORDER.indexOf(state.tab);
+  const nextIdx = TAB_ORDER.indexOf(tab);
+  const sec = $(`tab-${tab}`);
+  if (sec) {
+    sec.classList.remove('enter-left', 'enter-right');
+    if (prevIdx !== nextIdx && prevIdx >= 0 && nextIdx >= 0 && sec.classList.contains('hidden')) {
+      sec.classList.add(nextIdx > prevIdx ? 'enter-right' : 'enter-left');
+    }
+  }
   state.tab = tab;
   show($('tab-home'), tab === 'home');
   show($('tab-routines'), tab === 'routines');
@@ -234,7 +251,11 @@ function renderRoutines() {
   const cu = $('routines-custom');
   cu.innerHTML = state.routines.length
     ? state.routines.map((r) => routineCard(r, false)).join('')
-    : '<div class="muted">No custom routines yet.</div>';
+    : `<div class="empty-state compact">
+        <div class="empty-icon" aria-hidden="true">📋</div>
+        <b>No custom routines yet</b>
+        <span>Tap “+ New”, or save any finished workout as a routine.</span>
+      </div>`;
   bi.querySelectorAll('[data-start]').forEach((b) => b.addEventListener('click', () => {
     startRoutine(b.dataset.routine, b.dataset.day);
   }));
@@ -280,7 +301,14 @@ function renderHistory() {
     ${statTile('Volume', fmtVol(vol))}`;
 
   const list = $('history-list');
-  if (!total) { list.innerHTML = '<div class="muted">No workouts yet.</div>'; return; }
+  if (!total) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-icon" aria-hidden="true">🏋️</div>
+      <b>No workouts yet</b>
+      <span>Finish your first session and it lands here — volume, PRs and all.</span>
+    </div>`;
+    return;
+  }
   list.innerHTML = state.history.map((w, i) => {
     const v = workoutVolume(w, { bodyweightKg: state.settings.bodyweightKg });
     const dur = workoutDurationSec(w);
@@ -386,6 +414,7 @@ function updateWorkoutHead() {
 function renderWorkout() {
   const host = $('workout-exercises');
   if (!host || !state.workout) return;
+  disarmSetDelete(); // re-render is about to replace any armed row
   const empty = !state.workout.exercises.length;
   host.innerHTML = !empty
     ? state.workout.exercises.map((ex, ei) => exerciseCard(ex, ei)).join('')
@@ -412,12 +441,18 @@ function exerciseCard(ex, ei) {
   const coachBtn = cam
     ? `<button class="ghost small" data-coach="${ei}">📷 Coach${exp ? ' <span class="badge experimental">exp</span>' : ''}</button>`
     : '';
+  const howtoBtn = getHowto(ex.exerciseId)
+    ? `<button class="ghost small" data-howto="${esc(ex.exerciseId)}">ℹ️ How to</button>`
+    : '';
 
   const rows = ex.sets.map((s, si) => setRow(ex, s, si, ei, cat, prevSets[si])).join('');
   const metricHead = metricSpecs(cat).map((m) => `<span>${esc(m.label)}</span>`).join('');
+  const handle = state.workout.exercises.length > 1
+    ? `<button class="drag-handle no-ripple" data-drag-ex="${ei}" aria-label="Reorder ${esc(cat.name)} — drag up or down">⠿</button>`
+    : '';
   return `<div class="ex-card2" data-ex="${ei}">
     <div class="ex-head">
-      <div>${camDot}<b>${esc(cat.name)}</b>${cat.unilateral ? ' <span class="badge">per side</span>' : ''}</div>
+      <div class="ex-title">${handle}<div>${camDot}<b>${esc(cat.name)}</b>${cat.unilateral ? ' <span class="badge">per side</span>' : ''}</div></div>
       <button class="ghost tiny-btn" data-rmex="${ei}" aria-label="Remove exercise">✕</button>
     </div>
     <div class="muted tiny prev-line">Previous: ${esc(prevStr)}</div>
@@ -425,6 +460,7 @@ function exerciseCard(ex, ei) {
     ${rows}
     <div class="ex-actions">
       <button class="ghost small" data-addset="${ei}">+ Add set</button>
+      ${howtoBtn}
       ${coachBtn}
     </div>
   </div>`;
@@ -462,7 +498,7 @@ function setRow(ex, s, si, ei, cat, prev) {
     return `<input class="${cls}" data-metric="${m.key}" data-set="${ei}:${si}" type="number" inputmode="${m.decimal ? 'decimal' : 'numeric'}" placeholder="${placeholder}" value="${shown}" aria-label="${esc(m.label)}, set ${si + 1}" />`;
   }).join('');
   return `<div class="set-row ${s.completed ? 'done' : ''}" data-row="${ei}:${si}">
-    <span class="set-idx">${si + 1}${sideLabel}</span>
+    <span class="set-idx"><button class="set-handle no-ripple" data-drag-set="${ei}:${si}" aria-label="Set ${si + 1} — drag to reorder, hold to delete">${si + 1}</button>${sideLabel}</span>
     <span class="set-load">${metrics}${camTag}</span>
     <button class="type-btn t-${s.type}" data-type="${ei}:${si}" aria-label="Set type">${typeLabel}</button>
     <input class="rpe-in" data-rpe="${ei}:${si}" type="number" inputmode="decimal" placeholder="–" aria-label="RPE, set ${si + 1}" value="${s.rpe ?? ''}" />
@@ -515,6 +551,8 @@ function wireWorkoutEvents(host) {
     state.workout = updateSet(state.workout, ei, si, patch);
     if (nowDone) { try { navigator.vibrate?.(12); } catch {} }
     renderWorkout();
+    // celebratory pop on the freshly-ticked check (post-render, so it survives)
+    if (nowDone) host.querySelector(`[data-done="${ei}:${si}"]`)?.classList.add('pop');
     if (nowDone && state.settings.autoStartRest) startRest(ei);
   }));
   host.querySelectorAll('[data-addset]').forEach((el) => el.addEventListener('click', () => {
@@ -534,6 +572,68 @@ function wireWorkoutEvents(host) {
   host.querySelectorAll('[data-coach]').forEach((el) => el.addEventListener('click', () => {
     enterCoach(Number(el.dataset.coach));
   }));
+  host.querySelectorAll('[data-howto]').forEach((el) => el.addEventListener('click', () => {
+    openHowto(el.dataset.howto);
+  }));
+  // drag ⠿ to reorder exercises
+  host.querySelectorAll('[data-drag-ex]').forEach((h) => h.addEventListener('pointerdown', (e) => {
+    dragSession(e, {
+      handle: h,
+      items: [...host.querySelectorAll('.ex-card2')],
+      index: Number(h.dataset.dragEx),
+      onDrop: (from, to) => { state.workout = reorderExercise(state.workout, from, to); renderWorkout(); },
+    });
+  }));
+  // drag the set number to reorder sets; hold it to arm delete
+  host.querySelectorAll('[data-drag-set]').forEach((h) => h.addEventListener('pointerdown', (e) => {
+    const [ei, si] = parseIdx(h.dataset.dragSet);
+    const card = h.closest('.ex-card2');
+    dragSession(e, {
+      handle: h,
+      items: [...card.querySelectorAll('.set-row')],
+      index: si,
+      onDrop: (from, to) => { state.workout = reorderSet(state.workout, ei, from, to); renderWorkout(); },
+      onLongPress: () => armSetDelete(ei, si),
+    });
+  }));
+}
+
+// Long-press on a set number arms an inline Delete; any other tap (or 4 s of
+// inactivity) disarms it. This is the only way to remove a single set, so the
+// affordance is announced in the handle's aria-label.
+function armSetDelete(ei, si) {
+  disarmSetDelete();
+  const row = document.querySelector(`.set-row[data-row="${ei}:${si}"]`);
+  if (!row) return;
+  row.classList.add('armed');
+  const btn = document.createElement('button');
+  btn.className = 'set-delete no-ripple';
+  btn.textContent = '✕ Delete set';
+  btn.setAttribute('aria-label', `Delete set ${si + 1}`);
+  btn.addEventListener('click', () => {
+    state.workout = removeSet(state.workout, ei, si);
+    renderWorkout();
+  });
+  row.appendChild(btn);
+  const dismiss = (ev) => { if (!btn.contains(ev.target)) disarmSetDelete(); };
+  state.armedDelete = { row, btn, dismiss, timer: setTimeout(disarmSetDelete, 4000) };
+  // defer so the arming press's own release can't immediately dismiss it
+  setTimeout(() => {
+    if (state.armedDelete && state.armedDelete.btn === btn) {
+      document.addEventListener('pointerdown', dismiss, { capture: true });
+    }
+  }, 0);
+  btn.focus();
+}
+
+function disarmSetDelete() {
+  const a = state.armedDelete;
+  if (!a) return;
+  state.armedDelete = null;
+  clearTimeout(a.timer);
+  document.removeEventListener('pointerdown', a.dismiss, { capture: true });
+  a.row.classList.remove('armed');
+  a.btn.remove();
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -577,12 +677,60 @@ function renderPicker() {
     const badge = hasCamera(e)
       ? `<span class="badge cam ${confClass(e)}">📷 Coach</span>`
       : `<span class="badge manual">${esc(humanize(trackingType(e)))}</span>`;
-    return `<button class="pick-row" data-pick="${e.id}">
-      <span><b>${esc(e.name)}</b><span class="pick-meta">${esc(humanize(e.primaryMuscle))} · ${esc(humanize(e.equipment))}</span></span>
-      ${badge}
-    </button>`;
-  }).join('') || '<div class="muted">No matches.</div>';
+    const howto = getHowto(e.id)
+      ? `<button class="ghost small pick-howto" data-howto="${esc(e.id)}">ℹ️ How to</button>`
+      : '';
+    return `<div class="pick-row">
+      <button class="pick-main" data-pick="${e.id}">
+        <span><b>${esc(e.name)}</b><span class="pick-meta">${esc(humanize(e.primaryMuscle))} · ${esc(humanize(e.equipment))}</span></span>
+        ${badge}
+      </button>
+      ${howto}
+    </div>`;
+  }).join('') || pickerEmptyState(q);
   host.querySelectorAll('[data-pick]').forEach((b) => b.addEventListener('click', () => pickExercise(b.dataset.pick)));
+  host.querySelectorAll('[data-howto]').forEach((b) => b.addEventListener('click', () => openHowto(b.dataset.howto)));
+  const clear = $('picker-clear');
+  if (clear) clear.addEventListener('click', () => {
+    $('picker-search').value = '';
+    state.picker.filterMuscle = null;
+    state.picker.filterEquipment = null;
+    renderPickerFilters();
+    renderPicker();
+  });
+}
+
+function pickerEmptyState(query) {
+  const filtered = query || state.picker.filterMuscle || state.picker.filterEquipment;
+  return `<div class="empty-state">
+    <div class="empty-icon" aria-hidden="true">🔍</div>
+    <b>No matches</b>
+    <span>${filtered ? 'Nothing fits that search and filter combination.' : 'The catalog looks empty — try reloading.'}</span>
+    ${filtered ? '<button class="ghost small" id="picker-clear">Clear search &amp; filters</button>' : ''}
+  </div>`;
+}
+
+function openHowto(id) {
+  const howto = getHowto(id);
+  if (!howto) return;
+  const cat = getCatalogEntry(id);
+  $('howto-title').textContent = cat ? cat.name : id;
+  $('howto-images').innerHTML = howto.images.map((src, index) =>
+    `<img src="${esc(src)}" alt="${esc(cat ? cat.name : id)} demonstration ${index + 1}" />`
+  ).join('');
+  show($('howto-images'), howto.images.length > 0);
+  const visualSource = howto.visualSource;
+  $('howto-source').textContent = visualSource
+    ? `Public-domain demo: ${visualSource.exercise} · free-exercise-db`
+    : '';
+  show($('howto-source'), !!visualSource);
+  $('howto-steps').innerHTML = howto.steps.map((step) => `<li>${esc(step)}</li>`).join('');
+  $('howto-cues').textContent = howto.cues;
+  show($('howto-overlay'), true);
+}
+
+function closeHowto() {
+  show($('howto-overlay'), false);
 }
 
 function pickExercise(id) {
@@ -1044,6 +1192,10 @@ function wireEvents() {
   $('btn-save-as-routine').addEventListener('click', saveCurrentAsRoutine);
 
   $('picker-search').addEventListener('input', renderPicker);
+  $('btn-howto-close').addEventListener('click', closeHowto);
+  $('howto-overlay').addEventListener('click', (event) => {
+    if (event.target === $('howto-overlay')) closeHowto();
+  });
 
   $('btn-new-routine').addEventListener('click', createRoutineFlow);
 
@@ -1083,6 +1235,33 @@ function wireEvents() {
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     navigator.serviceWorker.register('./sw.js').catch((e) => console.warn('[app] SW register failed', e));
   }
+
+  attachRipple(document);
+  wireSwipeNav();
+}
+
+// Swipe right on a full-screen mode → back (the screen peels with the finger);
+// horizontal swipes on the tab views move between Home / Routines / History.
+// Disabled in camera coach and under any sheet; never starts on inputs, the
+// horizontally-scrolling filter chips, or a drag handle.
+function wireSwipeNav() {
+  const sheetOpen = () => ['screen-settings', 'howto-overlay', 'rest-overlay', 'calib-overlay']
+    .some((id) => !$(id).classList.contains('hidden'));
+  attachSwipeNav($('main'), {
+    enabled: () => !inCoach() && !sheetOpen(),
+    ignore: (t) => !!t.closest('.chips, input, select, textarea, .drag-handle, .set-handle'),
+    getScreenEl: () => (state.screen ? $(state.screen) : null),
+    getBackEl: () => {
+      if (state.screen === 'screen-picker' && state.workout) return $('screen-workout');
+      if (state.screen === 'screen-summary') return $('tab-home');
+      return $(`tab-${state.tab}`);
+    },
+    onBack: goBack,
+    onTabSwipe: (dir) => {
+      const next = adjacentTab(TAB_ORDER, state.tab, dir);
+      if (next) setTab(next);
+    },
+  });
 }
 
 // Minimal custom-routine builder: name → pick exercises → save.

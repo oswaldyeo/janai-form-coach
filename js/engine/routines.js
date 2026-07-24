@@ -73,7 +73,62 @@ export const OS_FULL_BODY_ROUTINE = Object.freeze({
   }],
 });
 
-export const BUILTIN_ROUTINES = [OS_FULL_BODY_ROUTINE, OCCAM_ROUTINE];
+// ── Knee-rehab (PFPS / "runner's knee") routines, added 2026-07-24 ───────────
+// Built for Os's anterior knee pain (worse up stairs, +theatre sign, no tendon
+// point-tenderness → patellofemoral pain syndrome). Follows the 2019 PFP
+// consensus (BJSM): combined hip + knee strengthening, first-line. Two phases
+// run sequentially (each ~2 weeks), not alternating A/B.
+const KNEE_REHAB_DISCLAIMER =
+  'Runner\'s-knee (PFPS) rehab — general strengthening, not medical advice. ' +
+  'Keep pain ≤2/10 during and no worse the next morning. Stop and see a sports ' +
+  'physio if pain goes above ~4/10, or you get swelling, locking, or giving-way. ' +
+  'Wall sit / Spanish squat / balance are timed holds (reps = seconds).';
+
+export const KNEE_REHAB_PHASE1 = Object.freeze({
+  id: 'knee-rehab-1',
+  name: 'Knee Rehab · Phase 1 (Wk 1–2)',
+  builtin: true,
+  source: 'PFPS rehab — calm-down + hip/quad base (2019 PFP consensus, BJSM)',
+  disclaimer: KNEE_REHAB_DISCLAIMER,
+  defaultRestSec: 60,
+  days: [{
+    key: 'A',
+    name: 'Calm-down + base · 3×/week',
+    exercises: [
+      { exerciseId: 'hevy-cda23948', targetSets: 3, targetReps: 12, targetRestSec: 60 }, // Glute Bridge
+      { exerciseId: 'hevy-cc016611', targetSets: 3, targetReps: 15, targetRestSec: 45 }, // Clamshell
+      { exerciseId: 'hevy-dc59d143', targetSets: 3, targetReps: 15, targetRestSec: 45 }, // Lateral Leg Raises
+      { exerciseId: 'hevy-ec02979e', targetSets: 3, targetReps: 15, targetRestSec: 45 }, // Lateral Band Walks
+      { exerciseId: 'straight-leg-raise', targetSets: 3, targetReps: 12, targetRestSec: 45 },
+      { exerciseId: 'hevy-c8706c80', targetSets: 3, targetReps: 30, targetRestSec: 60 }, // Wall Sit (sec)
+      { exerciseId: 'calf-raise', targetSets: 3, targetReps: 15, targetRestSec: 45 },
+    ],
+  }],
+});
+
+export const KNEE_REHAB_PHASE2 = Object.freeze({
+  id: 'knee-rehab-2',
+  name: 'Knee Rehab · Phase 2 (Wk 3–4)',
+  builtin: true,
+  source: 'PFPS rehab — progressive knee loading',
+  disclaimer: KNEE_REHAB_DISCLAIMER,
+  defaultRestSec: 60,
+  days: [{
+    key: 'A',
+    name: 'Progressive knee load · 3×/week',
+    exercises: [
+      { exerciseId: 'step-down', targetSets: 3, targetReps: 10, targetRestSec: 60 }, // eccentric — key lift
+      { exerciseId: 'spanish-squat', targetSets: 3, targetReps: 30, targetRestSec: 60 }, // sec hold
+      { exerciseId: 'hevy-c284d923', targetSets: 3, targetReps: 8, targetRestSec: 60 }, // Reverse Lunge
+      { exerciseId: 'split-squat', targetSets: 3, targetReps: 8, targetRestSec: 60 },
+      { exerciseId: 'single-leg-balance', targetSets: 3, targetReps: 30, targetRestSec: 30 }, // sec
+      { exerciseId: 'hevy-cda23948', targetSets: 3, targetReps: 12, targetRestSec: 45 }, // Glute Bridge (carry-over)
+      { exerciseId: 'hevy-ec02979e', targetSets: 3, targetReps: 15, targetRestSec: 45 }, // Band Walks (carry-over)
+    ],
+  }],
+});
+
+export const BUILTIN_ROUTINES = [OS_FULL_BODY_ROUTINE, OCCAM_ROUTINE, KNEE_REHAB_PHASE1, KNEE_REHAB_PHASE2];
 
 /** Normalise a (possibly user-authored) routine into the canonical shape. */
 export function makeRoutine(partial = {}) {

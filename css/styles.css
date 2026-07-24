@@ -26,6 +26,23 @@ body {
 .hidden { display: none !important; }
 .muted { color: var(--muted); font-size: 13px; }
 
+/* ── tactile press + ripple (all buttons/chips) ───────────────────────────
+   Press-in is fast (60ms); release springs back on an overshoot curve.
+   The ripple is JS-injected (js/interactions.js) and skipped entirely under
+   prefers-reduced-motion; the global reduce rule below kills the spring too. */
+button, .chip, .pick-row {
+  position: relative; overflow: hidden;
+  transition: transform .25s cubic-bezier(.34, 1.56, .64, 1);
+}
+button:not(:disabled):active, .chip:active { transform: scale(.97); transition-duration: .06s; }
+.pick-row:active { transform: scale(.99); transition-duration: .06s; }
+.ripple {
+  position: absolute; border-radius: 50%; pointer-events: none;
+  background: currentColor; opacity: .16; transform: scale(0);
+  animation: ripple .35s ease-out forwards;
+}
+@keyframes ripple { to { transform: scale(1); opacity: 0; } }
+
 /* App shell fills the dynamic viewport (accounts for mobile browser chrome). */
 #app {
   position: relative;
@@ -105,7 +122,6 @@ button.primary {
   width: 100%; min-height: 48px; border: 0; border-radius: 14px; padding: 14px 16px; font-weight: 800; font-size: 16px;
   color: var(--mint-ink); background: var(--mint); cursor: pointer;
 }
-button.primary:active { transform: scale(.99); }
 button.ghost {
   border: 1px solid var(--line); background: var(--panel-2); color: var(--ink);
   min-height: 44px; border-radius: 12px; padding: 11px 14px; font-weight: 650; cursor: pointer;
@@ -167,7 +183,9 @@ button:focus-visible, input:focus-visible, .chip:focus-visible, a:focus-visible 
 /* ── Calibration / Rest / Summary sheets ──────────────────────────────────── */
 .sheet {
   z-index: 4; margin: auto 0 0; display: flex; flex-direction: column; gap: 14px;
+  animation: sheet-up .25s ease-out;
 }
+@keyframes sheet-up { from { opacity: 0; transform: translateY(24px); } }
 .sheet .card { background: rgba(17,20,27,.94); backdrop-filter: blur(6px); }
 .big-num { font-size: 60px; font-weight: 850; text-align: center; color: var(--mint); }
 .center { text-align: center; }
@@ -193,9 +211,34 @@ button:focus-visible, input:focus-visible, .chip:focus-visible, a:focus-visible 
   background: var(--panel-2); color: var(--ink); font-size: 17px; cursor: pointer;
 }
 
-/* main content column; leaves room for the fixed bottom nav */
-#main { position: relative; z-index: 3; flex: 1; padding: 0 16px calc(84px + env(safe-area-inset-bottom)); }
+/* main content column; leaves room for the fixed bottom nav.
+   pan-y: vertical scroll stays native, horizontal deltas feed swipe nav. */
+#main { position: relative; z-index: 3; flex: 1; padding: 0 16px calc(84px + env(safe-area-inset-bottom)); touch-action: pan-y; }
 .tab, .screen { display: flex; flex-direction: column; gap: 14px; padding-top: 4px; }
+
+/* screen/tab entry transitions — display:none → flex restarts these on show.
+   Tabs slide in from the side they live on (set by js setTab); full-screen
+   modes rise in. prefers-reduced-motion collapses all of it (see bottom). */
+.tab { animation: tab-in .18s ease-out; }
+.tab.enter-left { animation: tab-in-left .22s ease-out; }
+.tab.enter-right { animation: tab-in-right .22s ease-out; }
+.screen { animation: screen-in .22s ease-out; }
+@keyframes tab-in { from { opacity: 0; transform: translateY(6px); } }
+@keyframes tab-in-left { from { opacity: .25; transform: translateX(-28px); } }
+@keyframes tab-in-right { from { opacity: .25; transform: translateX(28px); } }
+@keyframes screen-in { from { opacity: 0; transform: translateY(10px); } }
+
+/* Interactive iOS-style history swipe. The previous page is made visible
+   underneath while the current page follows the finger 1:1. */
+.swipe-back-foreground {
+  position: relative; z-index: 3; min-height: calc(100dvh - 82px);
+  background: var(--bg); animation: none; will-change: transform;
+}
+.swipe-back-underlay {
+  position: absolute; inset: 0; z-index: 1; min-height: 100%;
+  padding-top: 4px; background: var(--bg); pointer-events: none;
+  animation: none; will-change: transform, opacity;
+}
 
 /* generic layout helpers */
 .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -276,6 +319,8 @@ button.small { min-height: 40px; padding: 8px 12px; font-size: 13px; border-radi
 .routine:first-child { border-top: 0; }
 .routine-day { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; }
 .routine-day .muted { font-size: 12px; margin-top: 2px; }
+.routine-day > div { flex: 1 1 auto; min-width: 0; }
+.routine-day [data-start] { flex: 0 0 auto; min-width: 68px; white-space: nowrap; }
 
 /* workout history cards */
 .wcard { border-top: 1px solid var(--line); padding: 12px 0; }
@@ -294,6 +339,39 @@ button.small { min-height: 40px; padding: 8px 12px; font-size: 13px; border-radi
 .ex-card2 { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; margin-bottom: 12px; }
 .ex-head { display: flex; align-items: center; justify-content: space-between; }
 .ex-head b { font-size: 15px; }
+.ex-title { display: flex; align-items: center; gap: 4px; min-width: 0; }
+
+/* ── drag-to-reorder ─────────────────────────────────────────────────────── */
+.drag-handle, .set-handle {
+  border: 0; background: transparent; color: var(--muted); cursor: grab;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+  transition: transform .15s ease, color .15s ease;
+}
+.drag-handle { min-width: 36px; min-height: 44px; font-size: 15px; letter-spacing: 1px; margin-left: -8px; }
+.set-handle { flex: 1; min-height: 44px; padding: 0; font: inherit; font-weight: 700; color: var(--muted-2); font-size: 13px; text-align: left; }
+.drag-handle.hold-hint, .set-handle.hold-hint { color: var(--mint); transform: scale(1.18); }
+.ex-card2.dragging, .set-row.dragging {
+  position: relative; z-index: 5; background: var(--panel-2);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .55), 0 0 0 1.5px var(--mint);
+  transition: none;
+}
+.set-row.dragging { border-radius: 10px; padding-left: 4px; padding-right: 4px; }
+.drag-shift { transition: transform .18s ease; }
+
+/* long-press armed delete on a set row */
+.set-row { position: relative; }
+.set-row.armed { background: #2a1117; border-radius: 10px; }
+.set-delete {
+  position: absolute; inset: 2px 0 2px auto; z-index: 2;
+  border: 1px solid #52252a; border-radius: 10px; padding: 0 16px;
+  background: #3b1119; color: #ffb3b3; font-weight: 800; font-size: 13px; cursor: pointer;
+  animation: slide-in-right .15s ease-out;
+}
+@keyframes slide-in-right { from { opacity: 0; transform: translateX(10px); } }
+
+/* satisfying pop when a set is ticked complete */
+.check-btn.pop { animation: check-pop .3s cubic-bezier(.34, 1.56, .64, 1); }
+@keyframes check-pop { 0% { transform: scale(.8); } 55% { transform: scale(1.12); } 100% { transform: scale(1); } }
 .prev-line { margin: 6px 0 8px; }
 
 .set-head, .set-row { display: grid; grid-template-columns: 44px 1fr 52px 42px 46px; gap: 6px; align-items: center; }
@@ -328,24 +406,60 @@ button.small { min-height: 40px; padding: 8px 12px; font-size: 13px; border-radi
 }
 .workout-empty b { color: var(--ink); font-size: 17px; }
 .workout-empty span { margin-top: 6px; font-size: 13px; }
+
+/* shared empty states (history, routines, picker) */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 26px 16px; text-align: center; color: var(--muted);
+  animation: screen-in .25s ease-out;
+}
+.empty-state.compact { padding: 14px 12px; }
+.empty-state .empty-icon { font-size: 26px; opacity: .85; margin-bottom: 4px; }
+.empty-state b { color: var(--ink); font-size: 15px; }
+.empty-state span { font-size: 13px; line-height: 1.45; max-width: 300px; }
+.empty-state button { margin-top: 12px; }
 #btn-cancel-workout { color: var(--muted-2); border-color: var(--line); }
 
 /* ── exercise picker ────────────────────────────────────────────────────── */
 .picker-head { display: flex; gap: 8px; align-items: center; position: sticky; top: 0; z-index: 4; background: var(--bg); padding: 8px 0; }
 #picker-search { flex: 1; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); padding: 12px; font-size: 16px; }
-.chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 8px; -webkit-overflow-scrolling: touch; }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 8px; -webkit-overflow-scrolling: touch; touch-action: pan-x; }
 .filter-group > span { display: block; margin: 2px 0 5px; color: var(--muted); font-size: 10px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
 .picker-count { margin: 1px 0 9px; font-size: 12px; }
 .chip { white-space: nowrap; background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px; color: var(--muted-2); padding: 8px 13px; font-size: 12px; cursor: pointer; }
 .chip.on { background: var(--mint); color: var(--mint-ink); border-color: var(--mint); }
 .pick-row {
   display: flex; align-items: center; justify-content: space-between; width: 100%; text-align: left;
-  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 8px; color: var(--ink); cursor: pointer;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 0; margin-bottom: 8px; color: var(--ink);
 }
-.pick-row:active { transform: scale(.99); }
-.pick-row > span:first-child { min-width: 0; }
+.pick-main {
+  display: flex; align-items: center; justify-content: space-between; min-width: 0; flex: 1;
+  padding: 14px; border: 0; background: transparent; color: var(--ink); text-align: left; cursor: pointer;
+}
+.pick-main > span:first-child { min-width: 0; }
 .pick-meta { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
 .pick-row .badge { flex: 0 0 auto; margin-left: 10px; }
+.pick-howto { flex: 0 0 auto; margin-right: 8px; }
+
+/* ── exercise how-to sheet ──────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 9; justify-content: flex-end;
+  padding: 64px 16px max(16px, env(safe-area-inset-bottom));
+  background: rgba(0, 0, 0, .72);
+  animation: fade-in .2s ease-out; /* backdrop fades; the card inside rises */
+}
+.modal-backdrop .howto-card { animation: sheet-up .25s ease-out; }
+@keyframes fade-in { from { opacity: 0; } }
+.howto-card { width: 100%; max-width: 620px; max-height: 100%; margin: 0 auto; overflow-y: auto; }
+.howto-card h2 { margin: 4px 0 0; font-size: 22px; }
+.howto-card h3 { margin: 20px 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted-2); }
+.howto-images { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 16px; }
+.howto-images img { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 12px; background: var(--panel-2); }
+.howto-source { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
+.howto-steps { margin: 0; padding-left: 27px; }
+.howto-steps li { padding: 0 0 11px 5px; color: var(--muted-2); line-height: 1.48; }
+.howto-steps li::marker { color: var(--mint); font-weight: 800; }
+.howto-cues { margin: 0; padding: 14px; border-left: 3px solid var(--mint); border-radius: 8px; background: var(--panel-2); color: var(--ink); line-height: 1.5; }
 
 /* ── settings sheet ─────────────────────────────────────────────────────── */
 .set-field { margin-top: 14px; }

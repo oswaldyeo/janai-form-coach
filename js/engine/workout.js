@@ -78,6 +78,16 @@ export function removeSet(workout, exIndex, setIndex) {
   return mapExercise(workout, exIndex, (ex) => ({ ...ex, sets: ex.sets.filter((_, i) => i !== setIndex) }));
 }
 
+export function reorderSet(workout, exIndex, from, to) {
+  return mapExercise(workout, exIndex, (ex) => {
+    if (from < 0 || from >= ex.sets.length || to < 0 || to >= ex.sets.length || from === to) return ex;
+    const sets = ex.sets.slice();
+    const [moved] = sets.splice(from, 1);
+    sets.splice(to, 0, moved);
+    return { ...ex, sets };
+  });
+}
+
 export function updateSet(workout, exIndex, setIndex, patch) {
   return mapExercise(workout, exIndex, (ex) => ({
     ...ex,

@@ -6,7 +6,7 @@
 // are NOT guaranteed offline until they have been fetched once online. This is
 // documented honestly in the README.
 
-const SHELL_CACHE = 'formcoach-shell-v8'; // bump whenever any SHELL asset changes
+const SHELL_CACHE = 'formcoach-shell-v18'; // bump whenever any SHELL asset changes
 const RUNTIME_CACHE = 'formcoach-runtime-v2';
 
 const SHELL = [
@@ -17,6 +17,8 @@ const SHELL = [
   './js/app.js',
   './js/pose.js',
   './js/storage.js',
+  './js/interactions.js',
+  './js/engine/gestures.js',
   './js/engine/geometry.js',
   './js/engine/landmarks.js',
   './js/engine/rep-engine.js',
@@ -29,6 +31,9 @@ const SHELL = [
   './js/engine/migration.js',
   './js/engine/routines.js',
   './js/engine/wod.js',
+  './js/engine/howto.js',
+  // New library images cache on first view; the small verified core stays offline-ready.
+  './assets/howto/offline-core.json',
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -36,8 +41,11 @@ const SHELL = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(SHELL_CACHE)
-      .then((cache) => cache.addAll(SHELL))
+    Promise.all([
+      caches.open(SHELL_CACHE),
+      fetch('./assets/howto/offline-core.json').then((response) => response.json()),
+    ])
+      .then(([cache, offlineCore]) => cache.addAll([...SHELL, ...offlineCore]))
       .then(() => self.skipWaiting())
   );
 });
@@ -64,7 +72,7 @@ self.addEventListener('fetch', (event) => {
         const copy = res.clone();
         caches.open(SHELL_CACHE).then((c) => c.put(req, copy)).catch(() => {});
         return res;
-      }).catch(() => caches.match('./index.html')))
+      }).catch(() => req.mode === 'navigate' ? caches.match('./index.html') : Response.error()))
     );
   } else {
     // stale-while-revalidate for CDN (MediaPipe lib / wasm / model)

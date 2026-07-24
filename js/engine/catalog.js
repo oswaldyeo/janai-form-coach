@@ -132,6 +132,29 @@ const LOCAL_CATALOG = [
     primaryMuscle: 'abdominals', secondaryMuscles: ['shoulders'],
     loadType: 'bodyweight', unilateral: false, defaultRestSec: 60, camera: null,
   },
+
+  // ── knee-rehab (PFPS / runner's knee) additions — manual, bodyweight ───────
+  // Added 2026-07-24 for the "Knee Rehab" routines. No camera pretence.
+  {
+    id: 'straight-leg-raise', name: 'Straight-Leg Raise', category: 'legs', equipment: 'none',
+    primaryMuscle: 'quadriceps', secondaryMuscles: [],
+    loadType: 'bodyweight', trackingType: 'reps_only', unilateral: true, defaultRestSec: 45, camera: null,
+  },
+  {
+    id: 'step-down', name: 'Step-Down (eccentric)', category: 'legs', equipment: 'none',
+    primaryMuscle: 'quadriceps', secondaryMuscles: ['glutes'],
+    loadType: 'bodyweight', trackingType: 'reps_only', unilateral: true, defaultRestSec: 60, camera: null,
+  },
+  {
+    id: 'spanish-squat', name: 'Spanish Squat (isometric hold)', category: 'legs', equipment: 'resistance_band',
+    primaryMuscle: 'quadriceps', secondaryMuscles: ['glutes'],
+    loadType: 'bodyweight', trackingType: 'duration', unilateral: false, defaultRestSec: 60, camera: null,
+  },
+  {
+    id: 'single-leg-balance', name: 'Single-Leg Balance (hold)', category: 'legs', equipment: 'none',
+    primaryMuscle: 'glutes', secondaryMuscles: ['quadriceps', 'calves'],
+    loadType: 'bodyweight', trackingType: 'duration', unilateral: true, defaultRestSec: 30, camera: null,
+  },
 ];
 
 // These Hevy templates are represented by richer local entries above (stable
