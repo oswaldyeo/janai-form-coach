@@ -25,7 +25,7 @@ import { attachRipple, attachSwipeNav, dragSession } from './interactions.js';
 import {
   BUILTIN_ROUTINES, OCCAM_ROUTINE, OS_FULL_BODY_ROUTINE, routineToWorkout, repeatWorkout, workoutToRoutine, makeRoutine,
 } from './engine/routines.js';
-import { generateWOD } from './engine/wod.js';
+import { generateWOD } from './engine/wod.js?v=24';
 import { createPoseLandmarker } from './pose.js';
 import {
   loadWorkouts, saveWorkout, clearWorkouts, loadRoutines, saveRoutine, deleteRoutine,

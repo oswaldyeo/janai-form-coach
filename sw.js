@@ -6,7 +6,7 @@
 // are NOT guaranteed offline until they have been fetched once online. This is
 // documented honestly in the README.
 
-const SHELL_CACHE = 'formcoach-shell-v23'; // bump whenever any SHELL asset changes
+const SHELL_CACHE = 'formcoach-shell-v24'; // bump whenever any SHELL asset changes
 const RUNTIME_CACHE = 'formcoach-runtime-v2';
 
 const SHELL = [
@@ -14,7 +14,7 @@ const SHELL = [
   './index.html',
   './manifest.webmanifest',
   './css/styles.css',
-  './js/app.js',
+  './js/app.js?v=24',
   './js/pose.js',
   './js/storage.js',
   './js/interactions.js',
@@ -30,7 +30,7 @@ const SHELL = [
   './js/engine/workout.js',
   './js/engine/migration.js',
   './js/engine/routines.js',
-  './js/engine/wod.js',
+  './js/engine/wod.js?v=24',
   './js/engine/howto.js',
   // New library images cache on first view; the small verified core stays offline-ready.
   './assets/howto/offline-core.json',
@@ -66,13 +66,16 @@ self.addEventListener('fetch', (event) => {
   const isShell = url.origin === self.location.origin;
 
   if (isShell) {
-    // cache-first for our own shell assets
+    // Network-first keeps installed PWAs current; cached shell remains the
+    // offline fallback. Cache-first previously left Os on a stale daily plan.
     event.respondWith(
-      caches.match(req).then((hit) => hit || fetch(req).then((res) => {
+      fetch(req).then((res) => {
         const copy = res.clone();
         caches.open(SHELL_CACHE).then((c) => c.put(req, copy)).catch(() => {});
         return res;
-      }).catch(() => req.mode === 'navigate' ? caches.match('./index.html') : Response.error()))
+      }).catch(() => caches.match(req).then((hit) =>
+        hit || (req.mode === 'navigate' ? caches.match('./index.html') : Response.error())
+      ))
     );
   } else {
     // stale-while-revalidate for CDN (MediaPipe lib / wasm / model)
