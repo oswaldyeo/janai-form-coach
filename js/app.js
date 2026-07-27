@@ -21,7 +21,7 @@ import {
   nextLoadSuggestion, cadenceScore, SET_TYPES,
 } from './engine/workout.js';
 import { adjacentTab } from './engine/gestures.js';
-import { attachRipple, attachSwipeNav, dragSession } from './interactions.js';
+import { attachRipple, attachSwipeNav, dragSession, clearSwipeArtifacts } from './interactions.js';
 import {
   BUILTIN_ROUTINES, OCCAM_ROUTINE, OS_FULL_BODY_ROUTINE, routineToWorkout, repeatWorkout, workoutToRoutine, makeRoutine,
 } from './engine/routines.js';
@@ -155,6 +155,10 @@ function setTab(tab) {
 
 // Show one full-screen mode; hide tabs + nav. Passing null returns to tabs.
 function showScreen(id) {
+  // Sweep any leftover swipe-back peel styling before switching views, so a
+  // transform stranded by an interrupted swipe can never survive into the next
+  // screen and clip its right edge.
+  clearSwipeArtifacts();
   state.screen = id || null;
   ['screen-workout', 'screen-picker', 'screen-summary'].forEach((s) => show($(s), s === id));
   const onScreen = !!id;

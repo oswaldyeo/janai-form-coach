@@ -164,13 +164,48 @@ export function dragSession(e, {
 // Touch/pen only (mouse users have real back buttons). Vertical scrolling wins
 // the gesture the moment it dominates; on full-screen modes the screen "peels"
 // with the finger for a native-feeling swipe-back.
+
+// The swipe-back peel writes inline transform/opacity/box-shadow + peel classes
+// onto the current and previous screen. Stripping them lives here so *every*
+// teardown path — normal release, an interrupted gesture, or a navigation that
+// happens mid-swipe — clears exactly the same styling and can never strand a
+// screen translated off-viewport (which clipped its right edge: the "cards /
+// Done button cut off" bug). `restoreBehind` re-hides the previous screen only
+// when the swipe did NOT commit.
+function stripSwipeStyle(elm) {
+  if (!elm) return;
+  elm.classList.remove('swipe-back-foreground', 'swipe-back-underlay');
+  elm.style.transition = '';
+  elm.style.transform = '';
+  elm.style.boxShadow = '';
+  elm.style.opacity = '';
+}
+function resetPeel(follow, behind, { restoreBehind = true, behindWasHidden = false } = {}) {
+  stripSwipeStyle(follow);
+  if (behind) {
+    stripSwipeStyle(behind);
+    if (restoreBehind && behindWasHidden) behind.classList.add('hidden');
+  }
+}
+
+// Belt-and-suspenders: sweep any leftover peel artifacts under `root`. Called by
+// the app on every screen/tab change so a stale transform from an interrupted
+// swipe can never survive into the next view. Idempotent and safe to over-call.
+export function clearSwipeArtifacts(root = document) {
+  root.querySelectorAll('.swipe-back-foreground, .swipe-back-underlay')
+    .forEach((elm) => stripSwipeStyle(elm));
+}
+
 export function attachSwipeNav(el, {
   enabled, ignore, getScreenEl, getBackEl, onBack, onTabSwipe, backEdgeWidth = 36,
 }) {
   let s = null; // { x, y, t, id, locked, follow, behind, behindWasHidden }
 
   el.addEventListener('pointerdown', (e) => {
-    s = null;
+    // A new pointerdown mid-swipe (2nd finger, accidental re-tap) must not just
+    // drop `s` — that would orphan the in-flight peel, stranding its inline
+    // transform on the current screen forever. Roll it back first.
+    if (s) { resetPeel(s.follow, s.behind, { restoreBehind: true, behindWasHidden: s.behindWasHidden }); s = null; }
     if (e.pointerType === 'mouse') return;
     if (isDragActive() || !enabled()) return;
     if (ignore && e.target.closest && ignore(e.target)) return;
@@ -178,6 +213,9 @@ export function attachSwipeNav(el, {
     // Match iOS/Telegram: page-back begins at the left edge. Tab swipes still
     // begin anywhere because they are lateral navigation, not history-back.
     if (screen && e.clientX > backEdgeWidth) return;
+    // Capture the pointer so the release fires here even if the finger drifts off
+    // #main (onto the header/nav) — otherwise finish() never runs and the peel leaks.
+    try { el.setPointerCapture(e.pointerId); } catch { /* older browsers */ }
     s = {
       x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId,
       locked: false, follow: null, behind: null, behindWasHidden: false,
@@ -221,24 +259,12 @@ export function attachSwipeNav(el, {
   const finish = (e, cancelled) => {
     if (!s || e.pointerId !== s.id) return;
     const g = s; s = null;
+    try { el.releasePointerCapture(e.pointerId); } catch { /* not captured */ }
     const dx = e.clientX - g.x;
     const dy = e.clientY - g.y;
     const dt = performance.now() - g.t;
-    const cleanup = ({ restoreBehind = true } = {}) => {
-      if (g.follow) {
-        g.follow.classList.remove('swipe-back-foreground');
-        g.follow.style.transition = '';
-        g.follow.style.transform = '';
-        g.follow.style.boxShadow = '';
-      }
-      if (g.behind) {
-        g.behind.classList.remove('swipe-back-underlay');
-        g.behind.style.transition = '';
-        g.behind.style.transform = '';
-        g.behind.style.opacity = '';
-        if (restoreBehind && g.behindWasHidden) g.behind.classList.add('hidden');
-      }
-    };
+    const cleanup = ({ restoreBehind = true } = {}) =>
+      resetPeel(g.follow, g.behind, { restoreBehind, behindWasHidden: g.behindWasHidden });
 
     if (g.follow) {
       const width = Math.max(1, el.clientWidth || window.innerWidth);
