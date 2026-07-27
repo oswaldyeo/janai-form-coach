@@ -17,7 +17,7 @@ import { SessionRecorder, toWorkoutExportDocument } from './engine/session.js';
 import {
   makeWorkout, addExercise, removeExercise, reorderExercise, addSet, removeSet, reorderSet, updateSet,
   workoutVolume, completedSetCount, totalReps, workoutDurationSec,
-  summarize, newPRsInWorkout, previousSets, pruneIncompleteSets,
+  summarize, newPRsInWorkout, previousSets, seedSetsFromHistory, pruneIncompleteSets,
   nextLoadSuggestion, cadenceScore, SET_TYPES,
 } from './engine/workout.js';
 import { adjacentTab } from './engine/gestures.js';
@@ -750,7 +750,9 @@ function pickExercise(id) {
   // onPick callers (routine builder) own navigation — they either reopen the
   // picker for the next exercise or return to the tabs themselves.
   if (state.picker.onPick) { const cb = state.picker.onPick; cb(id); return; }
-  state.workout = addExercise(state.workout, id, [{}]);
+  // Seed the new exercise from its last logged session (any routine) so the
+  // lifter starts from real numbers instead of a blank row.
+  state.workout = addExercise(state.workout, id, seedSetsFromHistory(state.history, id));
   showScreen('screen-workout');
   renderWorkout();
 }

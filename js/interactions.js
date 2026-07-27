@@ -8,9 +8,14 @@
 import {
   classifySwipe, shouldCommitSwipeBack, dropIndexFromOffset, clampDragOffset,
 } from './engine/gestures.js';
+import { edgeAutoScroll, autoScrollChanged, HAPTIC } from './engine/haptics.js';
 
 const reducedMotion = () =>
   typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Fire-and-forget haptic. navigator.vibrate is a progressive enhancement — a
+// no-op (or absent) on iOS Safari / Home Screen PWA — so we never depend on it.
+function buzz(ms) { try { navigator.vibrate?.(ms); } catch { /* unsupported */ } }
 
 // ── ripple ───────────────────────────────────────────────────────────────────
 // Subtle Material-style touch feedback on every button/chip. Skipped entirely
@@ -54,6 +59,9 @@ export function dragSession(e, {
   let lastY = startY;
   let moved = false;
   let raf = 0;
+  let loop = 0;         // continuous rAF while dragging (drives edge auto-scroll)
+  let scrollComp = 0;   // px the viewport auto-scrolled — folded into the drag delta
+  let lastScroll = null; // last edgeAutoScroll() result, for tier-change haptics
   let to = index;
 
   try { h.setPointerCapture(e.pointerId); } catch { /* older browsers */ }
@@ -64,13 +72,16 @@ export function dragSession(e, {
   const pressTimer = onLongPress ? setTimeout(() => {
     if (moved) return;
     cleanup(false);
-    try { navigator.vibrate?.(10); } catch { /* optional */ }
+    buzz(10);
     onLongPress();
   }, holdMs) : 0;
 
-  function apply() {
-    raf = 0;
-    const rawDy = lastY - startY;
+  // Position the dragged item + its displaced neighbours. `scrollComp` keeps the
+  // item under the finger even as the viewport auto-scrolls: content shifts up by
+  // scrollComp, so the item's transform grows by the same amount. Fires a subtle
+  // haptic each time the drag crosses into a new drop slot.
+  function render() {
+    const rawDy = (lastY - startY) + scrollComp;
     if (!moved) {
       if (Math.abs(rawDy) <= slopPx) return;
       moved = true;
@@ -78,9 +89,11 @@ export function dragSession(e, {
       clearTimeout(pressTimer);
       dragged.classList.add('dragging');
       items.forEach((el) => { if (el !== dragged) el.classList.add('drag-shift'); });
+      startLoop();
     }
     const dy = clampDragOffset(rawDy, index, sizes, gap);
-    to = dropIndexFromOffset(index, dy, sizes, gap);
+    const nextTo = dropIndexFromOffset(index, dy, sizes, gap);
+    if (nextTo !== to) { to = nextTo; buzz(HAPTIC.cross); } // crossed a slot
     dragged.style.transform = `translateY(${dy}px)`;
     items.forEach((el, i) => {
       if (el === dragged) return;
@@ -91,10 +104,33 @@ export function dragSession(e, {
     });
   }
 
+  // While dragging, a single rAF loop pulls the viewport when the finger nears an
+  // edge (so off-screen list items become reachable) and re-renders every frame,
+  // so a still finger parked in the edge zone keeps scrolling.
+  function startLoop() {
+    if (loop) return;
+    const frame = () => {
+      const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+      const s = edgeAutoScroll(lastY, vh);
+      if (autoScrollChanged(lastScroll, s)) buzz(HAPTIC.scrollEdge);
+      lastScroll = s;
+      if (s.step) {
+        const before = window.scrollY;
+        window.scrollBy(0, s.step);
+        scrollComp += window.scrollY - before; // only count what actually moved
+      }
+      render();
+      loop = requestAnimationFrame(frame);
+    };
+    loop = requestAnimationFrame(frame);
+  }
+
   function onMove(ev) {
     if (ev.pointerId !== e.pointerId) return;
     lastY = ev.clientY;
-    if (!raf) raf = requestAnimationFrame(apply);
+    // Before the drag arms, the loop isn't running yet — schedule a one-shot
+    // render so we still detect the slop crossing.
+    if (!moved && !raf) raf = requestAnimationFrame(() => { raf = 0; render(); });
   }
 
   function cleanup(fireDrop) {
@@ -105,6 +141,7 @@ export function dragSession(e, {
     h.removeEventListener('pointerup', onUp);
     h.removeEventListener('pointercancel', onCancel);
     if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    if (loop) { cancelAnimationFrame(loop); loop = 0; }
     if (!moved) return;
     dragActive = false;
     const changed = fireDrop && to !== index;

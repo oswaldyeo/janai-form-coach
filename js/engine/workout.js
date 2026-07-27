@@ -223,6 +223,31 @@ export function previousSets(historyWorkouts, exerciseId) {
 }
 
 /**
+ * Fresh, UNCOMPLETED sets for an exercise about to be added to the active
+ * workout, seeded from its most recent completed sets anywhere in history
+ * (any routine — `previousSets` already scans newest-first across all workouts).
+ * Preserves the shape a lifter would reuse — weight, reps, the cardio metrics,
+ * set type and side — but strips completion and camera/rpe provenance so they
+ * read as a clean plan for today. Falls back to a single blank set the first
+ * time an exercise is ever logged. Pure.
+ */
+export function seedSetsFromHistory(historyWorkouts, exerciseId) {
+  const prev = previousSets(historyWorkouts, exerciseId);
+  if (!prev.length) return [makeSet({})];
+  return prev.map((s) => makeSet({
+    weight: s.weight,
+    reps: s.reps,
+    durationSec: s.durationSec,
+    distanceM: s.distanceM,
+    steps: s.steps,
+    floors: s.floors,
+    type: s.type,
+    side: s.side,
+    completed: false,
+  }));
+}
+
+/**
  * Drop uncompleted sets (and any exercise left with none) before saving a
  * finished workout, so history holds only what was actually performed. Pure.
  */
