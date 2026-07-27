@@ -25,6 +25,15 @@ const SLOT_IDS = [
   ['skull-crusher', 'bicep-curl'],
 ];
 
+const KNEE_FRIENDLY_SLOT_IDS = [
+  ['hevy-cda23948'], // Glute bridge: hip-dominant, low knee load
+  ['bench-press', 'pushup'],
+  ['db-row'],
+  ['shoulder-press'],
+  ['bicep-curl'],
+  ['skull-crusher'],
+];
+
 const ACCESSORIES = new Set(['bicep-curl', 'skull-crusher']);
 
 export function generateWOD({
@@ -34,6 +43,7 @@ export function generateWOD({
   nowMs,
   variant = 0,
   id = null,
+  kneeFriendly = false,
 } = {}) {
   if (!Number.isFinite(nowMs)) throw new Error('generateWOD requires an injected nowMs');
   const safeVariant = Math.max(0, Math.round(Number(variant) || 0));
@@ -44,7 +54,8 @@ export function generateWOD({
   const recoveryMode = !!(recent && nowMs - recent.startedAtMs >= 0 && nowMs - recent.startedAtMs < 36 * HOUR_MS);
   const selected = [];
 
-  SLOT_IDS.forEach((slot, slotIndex) => {
+  const slots = kneeFriendly ? KNEE_FRIENDLY_SLOT_IDS : SLOT_IDS;
+  slots.forEach((slot, slotIndex) => {
     const candidates = slot.filter((exerciseId) => allowed.has(exerciseId) && !selected.includes(exerciseId));
     if (!candidates.length) return;
     selected.push(chooseLeastRecent(candidates, history, safeVariant + slotIndex));
@@ -57,10 +68,12 @@ export function generateWOD({
   const dateKey = new Date(nowMs).toISOString().slice(0, 10);
   const workout = makeWorkout({
     id: id || `wod-${dateKey}-v${safeVariant}`,
-    title: `Workout of the Day · ${recoveryMode ? 'Recovery' : 'Full Body'}`,
+    title: `Workout of the Day · ${kneeFriendly ? 'Knee-friendly' : recoveryMode ? 'Recovery' : 'Full Body'}`,
     startedAtMs: null,
     routineId: 'janai-wod',
-    note: recoveryMode
+    note: kneeFriendly
+      ? 'Janai Strength Coach: runner’s-knee modification. No squats, lunges, jumping, or heavy knee loading. Keep discomfort at or below 2/10 and stop if pain rises.'
+      : recoveryMode
       ? 'Janai Strength Coach: reduced to two working sets because your last logged workout was under 36 hours ago.'
       : 'Janai Strength Coach: balanced dumbbell/bodyweight session using recent Form Coach progress and your Hevy baseline.',
     exercises,
@@ -70,12 +83,15 @@ export function generateWOD({
     workout,
     meta: {
       recoveryMode,
+      kneeFriendly,
       variant: safeVariant,
       generatedAtMs: nowMs,
       expiresAtMs: startOfNextLocalDay(nowMs),
       exerciseCount: exercises.length,
       setCount: exercises.reduce((n, ex) => n + ex.sets.length, 0),
-      rationale: recoveryMode
+      rationale: kneeFriendly
+        ? 'Runner’s-knee day: upper body + low-knee-load glute work. No squats or lunges.'
+        : recoveryMode
         ? 'Recovery spacing: 2 sets each, loads held or eased.'
         : 'Balanced full body: movements rotate; reps build before load rises ~5%.',
     },

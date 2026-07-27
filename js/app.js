@@ -206,6 +206,9 @@ function renderWOD() {
       baselineRoutine: OS_FULL_BODY_ROUTINE,
       nowMs: t,
       variant: state.wodVariant,
+      // Temporary same-day override requested by Os while his runner’s knee is active.
+      // It expires automatically at local midnight with the WOD.
+      kneeFriendly: localDateKey(t) === '2026-07-27',
     });
   }
   const { workout, meta } = state.wod;
@@ -219,6 +222,14 @@ function renderWOD() {
       : `${ex.sets.length} × ${first.reps} · ${fmtWeight(first.weight)}`;
     return `<div class="wod-row"><span>${esc(cat ? cat.name : ex.exerciseId)}</span><b>${esc(prescription)}</b></div>`;
   }).join('');
+}
+
+function localDateKey(ms) {
+  const d = new Date(ms);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function regenerateWOD() {
