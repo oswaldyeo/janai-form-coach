@@ -6,7 +6,7 @@
 // are NOT guaranteed offline until they have been fetched once online. This is
 // documented honestly in the README.
 
-const SHELL_CACHE = 'formcoach-shell-v27'; // bump whenever any SHELL asset changes
+const SHELL_CACHE = 'formcoach-shell-v29'; // bump whenever any SHELL asset changes
 const RUNTIME_CACHE = 'formcoach-runtime-v2';
 
 const SHELL = [
@@ -14,7 +14,7 @@ const SHELL = [
   './index.html',
   './manifest.webmanifest',
   './css/styles.css',
-  './js/app.js?v=24',
+  './js/app.js?v=26',
   './js/pose.js',
   './js/storage.js',
   './js/interactions.js',
@@ -29,6 +29,7 @@ const SHELL = [
   './js/engine/catalog.js',
   './js/engine/hevy-catalog.js',
   './js/engine/workout.js',
+  './js/engine/delivery.js',
   './js/engine/migration.js',
   './js/engine/routines.js',
   './js/engine/wod.js?v=24',

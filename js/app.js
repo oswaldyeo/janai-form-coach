@@ -14,6 +14,7 @@ import {
 import { RepEngine } from './engine/rep-engine.js';
 import { calibrate } from './engine/calibration.js';
 import { SessionRecorder, toWorkoutExportDocument } from './engine/session.js';
+import { buildDeliveryDocument, deliveryFilename } from './engine/delivery.js';
 import {
   makeWorkout, addExercise, removeExercise, reorderExercise, addSet, removeSet, reorderSet, updateSet,
   workoutVolume, completedSetCount, totalReps, workoutDurationSec,
@@ -31,6 +32,7 @@ import {
   loadWorkouts, saveWorkout, clearWorkouts, loadRoutines, saveRoutine, deleteRoutine,
   loadSettings, saveSettings, loadCalibration, saveCalibration, ensureMigrated,
   loadActiveWorkout, saveActiveWorkout, clearActiveWorkout,
+  queueForDelivery, markDelivered, pendingWorkouts, loadOutbox,
 } from './storage.js';
 
 const $ = (id) => document.getElementById(id);
@@ -191,6 +193,7 @@ function goBack() {
 function renderHome() {
   show($('home-active'), !!state.workout);
   show($('btn-resume-workout'), !!state.workout);
+  refreshPendingBanner();
   renderWOD();
   // Disable "Repeat last workout" when there's nothing to repeat. Set this
   // before the empty-history early return below, or it never runs when empty.
@@ -817,8 +820,10 @@ function finishWorkout() {
   finished.endedAtMs = now();
   const prs = newPRsInWorkout(finished, state.history);
   if (!saveWorkout(finished)) alert('Could not save the workout — storage is unavailable. Export before closing.');
+  queueForDelivery(finished);      // remember to hand it to Janai Health
   discardActive();
   state.history = loadWorkouts();
+  refreshPendingBanner();
   showSummary(finished, prs);
   state.workout = null;
 }
@@ -1172,6 +1177,82 @@ function exportJSON() {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// ── delivery to Janai Health ─────────────────────────────────────────────────
+// No unauthenticated public write endpoint exists (and none should — this is
+// Os-only health data), so delivery is a local, authenticated hop: the PWA
+// SHARES a workout JSON file into an iOS Shortcut that drops it in Os's iCloud
+// inbox, which a launchd watcher on the Mac ingests. Web Share works offline;
+// the outbox persists un-delivered workouts so nothing is lost on cancel/failure,
+// and the receiver dedupes by workout id so re-sharing is always safe.
+function deliveryResolver(id) {
+  const e = getCatalogEntry(id);
+  return e ? { name: e.name, primaryMuscle: e.primaryMuscle } : null;
+}
+
+async function sendToJanaiHealth(workouts) {
+  const list = (workouts || []).filter(Boolean);
+  if (!list.length) { toast('Nothing to send — all workouts delivered.'); return; }
+  const doc = buildDeliveryDocument(list, {
+    settings: { units: unit(), bodyweightKg: state.settings.bodyweightKg },
+    resolveEntry: deliveryResolver,
+    nowMs: now(),
+  });
+  const json = JSON.stringify(doc, null, 2);
+  const fname = deliveryFilename(list, now());
+  const ids = list.map((w) => w.id);
+
+  // Preferred: share the file so Os's "Save to Form Coach" Shortcut can drop it
+  // in the iCloud inbox. Feature-detect canShare({files}) before attempting.
+  const file = (typeof File !== 'undefined') ? new File([json], fname, { type: 'application/json' }) : null;
+  if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'Form Coach → Janai Health' });
+      markDelivered(ids);
+      refreshPendingBanner();
+      toast('Sent to Janai Health. 🏋️');
+      return;
+    } catch (err) {
+      if (err && err.name === 'AbortError') { toast('Send cancelled — still pending.'); return; }
+      // fall through to download fallback on real errors
+    }
+  }
+  // Fallback (no Web Share, e.g. desktop): download the same file. Os saves it
+  // into the iCloud Form Coach folder manually. Stays pending until confirmed…
+  // but we optimistically clear on a successful download to avoid nagging.
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fname;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  markDelivered(ids);
+  refreshPendingBanner();
+  toast('Saved — move it into the Form Coach iCloud folder.');
+}
+
+function refreshPendingBanner() {
+  const btn = $('btn-send-pending');
+  if (!btn) return;
+  const n = loadOutbox().length;
+  btn.hidden = n === 0;
+  btn.textContent = n > 1 ? `Send ${n} pending 🏋️` : 'Send pending 🏋️';
+}
+
+// minimal ephemeral toast (no dependency on the cue system)
+function toast(msg) {
+  let el = $('toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.style.cssText = 'position:fixed;left:50%;bottom:88px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;z-index:9999;max-width:80%;text-align:center;opacity:0;transition:opacity .2s';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { el.style.opacity = '0'; }, 2600);
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // PWA install
 // ════════════════════════════════════════════════════════════════════════════
@@ -1234,6 +1315,8 @@ function wireEvents() {
 
   $('btn-export').addEventListener('click', exportJSON);
   $('btn-summary-export').addEventListener('click', exportJSON);
+  $('btn-summary-send').addEventListener('click', () => sendToJanaiHealth(pendingWorkouts()));
+  $('btn-send-pending').addEventListener('click', () => sendToJanaiHealth(pendingWorkouts()));
   $('btn-summary-done').addEventListener('click', () => { showScreen(null); setTab('home'); });
 
   $('btn-settings').addEventListener('click', openSettings);
@@ -1315,7 +1398,28 @@ function createRoutineFlow() {
   addNext();
 }
 
+// Ask the browser to treat our storage as durable. Without this, WebKit/iOS
+// classifies a PWA's localStorage as "best-effort" and can evict it under
+// storage pressure — the workout logged yesterday silently vanishes overnight.
+// persist() promotes the origin to "persistent" so data survives until the
+// user explicitly clears it. Best-effort and non-fatal: feature-detected,
+// never blocks boot, and older Safari without the Storage API just no-ops.
+function requestPersistentStorage() {
+  try {
+    if (!navigator.storage || !navigator.storage.persist) return;
+    navigator.storage.persisted().then((already) => {
+      if (already) { setStatus && setStatus('storage: persistent'); return; }
+      navigator.storage.persist().then((granted) => {
+        console.info(`[app] persistent storage ${granted ? 'granted' : 'denied'}`);
+      }).catch(() => {});
+    }).catch(() => {});
+  } catch { /* Storage API unavailable — nothing to do */ }
+}
+
 function boot() {
+  // Durable storage first — before any read, so history can't be evicted out
+  // from under us on the next launch.
+  requestPersistentStorage();
   // one-time, idempotent v1 → v2 migration
   try { ensureMigrated(now); } catch (e) { console.warn('[app] migration skipped', e); }
   state.history = loadWorkouts();

@@ -15,6 +15,10 @@ const ACTIVE_KEY = 'janai.formcoach.active.v2';
 const ROUTINES_KEY = 'janai.formcoach.routines.v2';
 const SETTINGS_KEY = 'janai.formcoach.settings.v2';
 const MIGRATION_KEY = 'janai.formcoach.migration';
+// Delivery outbox: ids of finished workouts not yet handed to Janai Health.
+// Persisted so a failed/cancelled/offline share is never lost — retry re-shares
+// everything still pending, and the receiver dedupes by workout id.
+const OUTBOX_KEY = 'janai.formcoach.outbox.v1';
 
 const HISTORY_LIMIT = 200;
 const WORKOUT_LIMIT = 300;
@@ -136,6 +140,43 @@ export function saveSettings(patch) {
   setItem(SETTINGS_KEY, JSON.stringify(merged));
   return merged;
 }
+
+// ── delivery outbox (pending → Janai Health) ─────────────────────────────────
+// An array of { id, endedAtMs, queuedAt }. Newest-first, capped. Delivery is a
+// manual share on iOS (no unauthenticated write endpoint), so we remember what
+// still needs sending across sessions and let the receiver dedupe.
+
+export function loadOutbox() {
+  const arr = safeParse(getItem(OUTBOX_KEY), []);
+  return Array.isArray(arr) ? arr : [];
+}
+
+function saveOutbox(arr) {
+  return setItem(OUTBOX_KEY, JSON.stringify((arr || []).slice(0, WORKOUT_LIMIT)));
+}
+
+/** Queue a finished workout for delivery (idempotent by id). */
+export function queueForDelivery(workout, now = Date.now) {
+  if (!workout || !workout.id) return false;
+  const out = loadOutbox().filter((e) => e.id !== workout.id);
+  out.unshift({ id: workout.id, endedAtMs: workout.endedAtMs ?? null, queuedAt: now() });
+  return saveOutbox(out);
+}
+
+/** Mark a set of workout ids as delivered (remove them from the outbox). */
+export function markDelivered(ids) {
+  const set = new Set(ids || []);
+  return saveOutbox(loadOutbox().filter((e) => !set.has(e.id)));
+}
+
+/** The full workout objects still pending delivery, newest-first. */
+export function pendingWorkouts() {
+  const pendingIds = new Set(loadOutbox().map((e) => e.id));
+  if (!pendingIds.size) return [];
+  return loadWorkouts().filter((w) => w && pendingIds.has(w.id));
+}
+
+export function clearOutbox() { return removeItem(OUTBOX_KEY); }
 
 // ── one-time v1 → v2 migration (idempotent via guard) ────────────────────────
 

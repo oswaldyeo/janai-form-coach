@@ -105,7 +105,10 @@
       <div class="card">
         <div class="head-row">
           <div class="label">Workout history</div>
-          <button class="ghost small" id="btn-export">Export JSON</button>
+          <div style="display:flex;gap:6px">
+            <button class="ghost small" id="btn-send-pending" hidden>Send pending 🏋️</button>
+            <button class="ghost small" id="btn-export">Export JSON</button>
+          </div>
         </div>
         <div id="history-list" style="margin-top:10px"></div>
       </div>
@@ -146,9 +149,10 @@
         <div id="summary-body" style="margin-top:8px"></div>
       </div>
       <div id="summary-prs"></div>
+      <button class="primary" id="btn-summary-send" style="width:100%;margin-bottom:8px">Send to Janai Health 🏋️</button>
       <div class="row-2">
         <button class="ghost" id="btn-summary-export">Export</button>
-        <button class="primary" id="btn-summary-done">Done</button>
+        <button class="ghost" id="btn-summary-done">Done</button>
       </div>
     </section>
   </main>
@@ -259,6 +263,6 @@
 
 </div>
 
-<script type="module" src="./js/app.js?v=24"></script>
+<script type="module" src="./js/app.js?v=26"></script>
 </body>
 </html>
