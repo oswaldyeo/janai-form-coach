@@ -1246,7 +1246,20 @@ function wireEvents() {
   });
 
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-    navigator.serviceWorker.register('./sw.js').catch((e) => console.warn('[app] SW register failed', e));
+    let reloadingForUpdate = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (reloadingForUpdate) return;
+      reloadingForUpdate = true;
+      location.reload();
+    });
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((registration) => {
+      // iOS Home Screen apps can remain suspended for days. Check on every
+      // launch and whenever the app returns to the foreground.
+      registration.update().catch(() => {});
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') registration.update().catch(() => {});
+      });
+    }).catch((e) => console.warn('[app] SW register failed', e));
   }
 
   attachRipple(document);
