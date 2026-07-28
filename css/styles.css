@@ -404,7 +404,10 @@ button.small { min-height: 40px; padding: 8px 12px; font-size: 13px; border-radi
 .mul { color: var(--muted); }
 .w-in, .r-in, .metric-in, .rpe-in {
   min-width: 0; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
-  color: var(--ink); padding: 11px 4px; font-size: 15px; font-weight: 650; text-align: center;
+  /* 16px is the floor: iOS auto-zooms (and pans the viewport right, clipping the
+     screen) when a focused input is under 16px. #picker-search and settings
+     inputs already honour this — the set-value fields were the miss. */
+  color: var(--ink); padding: 11px 4px; font-size: 16px; font-weight: 650; text-align: center;
 }
 .w-in, .r-in, .metric-in { width: 100%; }
 .rpe-in { width: 100%; padding: 11px 2px; color: var(--muted-2); }
