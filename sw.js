@@ -6,7 +6,7 @@
 // are NOT guaranteed offline until they have been fetched once online. This is
 // documented honestly in the README.
 
-const SHELL_CACHE = 'formcoach-shell-v30'; // bump whenever any SHELL asset changes
+const SHELL_CACHE = 'formcoach-shell-v31'; // bump whenever any SHELL asset changes
 const RUNTIME_CACHE = 'formcoach-runtime-v2';
 
 const SHELL = [
@@ -55,7 +55,10 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== SHELL_CACHE && k !== RUNTIME_CACHE).map((k) => caches.delete(k)))
+      // Caches are origin-scoped and this origin hosts several PWAs (form coach,
+      // janai-fast, …). Only evict OUR stale caches — deleting everything that
+      // isn't ours knocks the other apps offline.
+      Promise.all(keys.filter((k) => k.startsWith('formcoach-') && k !== SHELL_CACHE && k !== RUNTIME_CACHE).map((k) => caches.delete(k)))
     ).then(() => self.clients.claim()).then(() =>
       // v24 and older had no controller-change reload handshake. Navigate open
       // clients once when v25 activates so installed iOS PWAs leave the stale
