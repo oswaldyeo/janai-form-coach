@@ -1,0 +1,104 @@
+{
+  "generatedAt": "2026-07-24T15:31:20.031Z",
+  "model": "gpt-image-2",
+  "provider": "openai",
+  "totalEntries": 3,
+  "complete": 3,
+  "exercises": [
+    {
+      "id": "hevy-99d5f10e",
+      "name": "Ab Wheel",
+      "equipment": "other",
+      "frames": [
+        "assets/howto/ai/hevy-99d5f10e/0.jpg",
+        "assets/howto/ai/hevy-99d5f10e/1.jpg"
+      ],
+      "verdicts": {
+        "start": "PASS",
+        "finish": "PASS"
+      },
+      "attempts": {
+        "start": 1,
+        "finish": 3
+      },
+      "complete": true,
+      "priorVisual": "photo",
+      "specSource": "cached",
+      "integratorNote": "previously had a free-exercise-db photo — verify before swapping",
+      "provenance": {
+        "generator": "gpt-image-2",
+        "size": "1024x1024",
+        "quality": "high",
+        "styleRefs": [
+          "a4030b92ec355d2eb3be26480ad9fbf6bf0a2be2f42d23961a0b46541907326b.jpg",
+          "formcoach-proto-sumo-deadlift-start---5014f628-cd3b-48b4-8a19-bf50beb1a3fe.jpg"
+        ],
+        "formSpec": "claude sonnet physiologist pre-pass (state/form-specs/<id>.json)",
+        "verifier": "claude sonnet (strict physiologist gate, spec-anchored)"
+      }
+    },
+    {
+      "id": "hevy-d20d7bbe",
+      "name": "Sumo Deadlift",
+      "equipment": "barbell",
+      "frames": [
+        "assets/howto/ai/hevy-d20d7bbe/0.jpg",
+        "assets/howto/ai/hevy-d20d7bbe/1.jpg"
+      ],
+      "verdicts": {
+        "start": "PASS",
+        "finish": "PASS"
+      },
+      "attempts": {
+        "start": 1,
+        "finish": 2
+      },
+      "complete": true,
+      "priorVisual": "photo",
+      "specSource": "cached",
+      "integratorNote": "previously had a free-exercise-db photo — verify before swapping",
+      "provenance": {
+        "generator": "gpt-image-2",
+        "size": "1024x1024",
+        "quality": "high",
+        "styleRefs": [
+          "a4030b92ec355d2eb3be26480ad9fbf6bf0a2be2f42d23961a0b46541907326b.jpg",
+          "formcoach-proto-sumo-deadlift-start---5014f628-cd3b-48b4-8a19-bf50beb1a3fe.jpg"
+        ],
+        "formSpec": "claude sonnet physiologist pre-pass (state/form-specs/<id>.json)",
+        "verifier": "claude sonnet (strict physiologist gate, spec-anchored)"
+      }
+    },
+    {
+      "id": "hevy-08a2974e",
+      "name": "T Bar Row",
+      "equipment": "machine",
+      "frames": [
+        "assets/howto/ai/hevy-08a2974e/0.jpg",
+        "assets/howto/ai/hevy-08a2974e/1.jpg"
+      ],
+      "verdicts": {
+        "start": "PASS",
+        "finish": "PASS"
+      },
+      "attempts": {
+        "start": 2,
+        "finish": 1
+      },
+      "complete": true,
+      "priorVisual": "none",
+      "specSource": "cached",
+      "provenance": {
+        "generator": "gpt-image-2",
+        "size": "1024x1024",
+        "quality": "high",
+        "styleRefs": [
+          "a4030b92ec355d2eb3be26480ad9fbf6bf0a2be2f42d23961a0b46541907326b.jpg",
+          "formcoach-proto-sumo-deadlift-start---5014f628-cd3b-48b4-8a19-bf50beb1a3fe.jpg"
+        ],
+        "formSpec": "claude sonnet physiologist pre-pass (state/form-specs/<id>.json)",
+        "verifier": "claude sonnet (strict physiologist gate, spec-anchored)"
+      }
+    }
+  ]
+}
