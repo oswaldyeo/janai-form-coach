@@ -24,8 +24,11 @@ tracker.
   records what was performed.
 - **Crash-safe active workout** — the in-progress workout is persisted on every
   change and auto-resumed after a refresh, tab kill, or crash.
-- **Routines** — a built-in *Occam-style A/B* preset, plus start-empty,
-  repeat-last, and save-current-workout-as-routine.
+- **Routines** — built-in presets (*Occam-style A/B*, Os' Full Body, two knee-rehab
+  phases, and two physio upper-back routines), plus start-empty, repeat-last, and
+  save-current-workout-as-routine. Rehab presets state their prescribed frequency
+  in the day name; the app does not schedule or police it. A "3 × 12 per side"
+  prescription seeds six rows with the working side pre-assigned.
 - **History & progression** — per-workout summaries (volume, duration, sets),
   deterministic PR detection (max weight, Epley 1RM, volume), previous-value
   recall, and next-load *suggestions* for the Occam routine.
@@ -33,11 +36,14 @@ tracker.
   triceps pushdown, one-arm DB row (experimental camera) and cable twist
   (manual), plus manually-tracked foundational lifts (lat pulldown, leg press,
   RDL, deadlift, calf raise, plank).
-- **Exercise how-to panels** — all 455 exercises in the full catalog have
+- **Exercise how-to panels** — all 461 exercises in the full catalog have
   numbered setup/execution steps and form cues.
   Faithful public-domain demonstrations are bundled locally from
-  `yuhonas/free-exercise-db`; exercises without a trustworthy visual match stay
-  text-only rather than showing a misleading substitute.
+  `yuhonas/free-exercise-db`. Where no faithful photograph exists, a small number
+  of exercises use AI-generated illustrations produced by `scripts/ai-visuals`
+  against a written form spec, gated by a verifier and reviewed by a human — the
+  how-to panel labels them as illustrations, never as demonstrations. Exercises
+  with neither stay text-only rather than showing a misleading substitute.
 
 ### The camera is honest about what it can see
 
@@ -124,7 +130,7 @@ js/app.js                          orchestration: screens, workout loop, camera 
     ├── catalog.js                 exercise taxonomy (data) + camera capability blocks
     ├── workout.js                 Workout/Set model, volume, PR, 1RM, progression, cadence
     ├── migration.js               v1 history → v2 workouts (idempotent, lossless)
-    ├── routines.js                routine templates + built-in Occam-style A/B
+    ├── routines.js                routine templates + built-in presets (Occam, rehab)
     └── session.js                 SessionRecorder + v1 & v2 export schemas
 ```
 

@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-07-24T15:31:20.031Z",
+  "generatedAt": "2026-08-02T15:28:00.288Z",
   "model": "gpt-image-2",
   "provider": "openai",
-  "totalEntries": 3,
-  "complete": 3,
+  "totalEntries": 8,
+  "complete": 8,
   "exercises": [
     {
       "id": "hevy-99d5f10e",
@@ -30,8 +30,7 @@
         "size": "1024x1024",
         "quality": "high",
         "styleRefs": [
-          "a4030b92ec355d2eb3be26480ad9fbf6bf0a2be2f42d23961a0b46541907326b.jpg",
-          "formcoach-proto-sumo-deadlift-start---5014f628-cd3b-48b4-8a19-bf50beb1a3fe.jpg"
+          "0.jpg"
         ],
         "formSpec": "claude sonnet physiologist pre-pass (state/form-specs/<id>.json)",
         "verifier": "claude sonnet (strict physiologist gate, spec-anchored)"
@@ -62,8 +61,7 @@
         "size": "1024x1024",
         "quality": "high",
         "styleRefs": [
-          "a4030b92ec355d2eb3be26480ad9fbf6bf0a2be2f42d23961a0b46541907326b.jpg",
-          "formcoach-proto-sumo-deadlift-start---5014f628-cd3b-48b4-8a19-bf50beb1a3fe.jpg"
+          "0.jpg"
         ],
         "formSpec": "claude sonnet physiologist pre-pass (state/form-specs/<id>.json)",
         "verifier": "claude sonnet (strict physiologist gate, spec-anchored)"
@@ -93,8 +91,157 @@
         "size": "1024x1024",
         "quality": "high",
         "styleRefs": [
-          "a4030b92ec355d2eb3be26480ad9fbf6bf0a2be2f42d23961a0b46541907326b.jpg",
-          "formcoach-proto-sumo-deadlift-start---5014f628-cd3b-48b4-8a19-bf50beb1a3fe.jpg"
+          "0.jpg"
+        ],
+        "formSpec": "claude sonnet physiologist pre-pass (state/form-specs/<id>.json)",
+        "verifier": "claude sonnet (strict physiologist gate, spec-anchored)"
+      }
+    },
+    {
+      "id": "thoracic-extension-roller",
+      "name": "Thoracic Extension (Foam Roller)",
+      "equipment": "other",
+      "frames": [
+        "assets/howto/ai/thoracic-extension-roller/0.jpg",
+        "assets/howto/ai/thoracic-extension-roller/1.jpg"
+      ],
+      "verdicts": {
+        "start": "PASS",
+        "finish": "PASS"
+      },
+      "attempts": {
+        "start": 1,
+        "finish": 1
+      },
+      "complete": true,
+      "priorVisual": "none",
+      "specSource": "cached",
+      "provenance": {
+        "generator": "gpt-image-2",
+        "size": "1024x1024",
+        "quality": "high",
+        "styleRefs": [
+          "0.jpg"
+        ],
+        "formSpec": "claude sonnet physiologist pre-pass (state/form-specs/<id>.json)",
+        "verifier": "claude sonnet (strict physiologist gate, spec-anchored)"
+      }
+    },
+    {
+      "id": "open-book-rotation",
+      "name": "Open-Book Rotation",
+      "equipment": "none",
+      "frames": [
+        "assets/howto/ai/open-book-rotation/0.jpg",
+        "assets/howto/ai/open-book-rotation/1.jpg"
+      ],
+      "verdicts": {
+        "start": "PASS",
+        "finish": "PASS"
+      },
+      "attempts": {
+        "start": 1,
+        "finish": 1
+      },
+      "complete": true,
+      "priorVisual": "none",
+      "specSource": "cached",
+      "provenance": {
+        "generator": "gpt-image-2",
+        "size": "1024x1024",
+        "quality": "high",
+        "styleRefs": [
+          "0.jpg"
+        ],
+        "formSpec": "claude sonnet physiologist pre-pass (state/form-specs/<id>.json)",
+        "verifier": "claude sonnet (strict physiologist gate, spec-anchored)"
+      }
+    },
+    {
+      "id": "chin-tuck",
+      "name": "Chin Tuck",
+      "equipment": "none",
+      "frames": [
+        "assets/howto/ai/chin-tuck/0.jpg",
+        "assets/howto/ai/chin-tuck/1.jpg"
+      ],
+      "verdicts": {
+        "start": "PASS",
+        "finish": "PASS"
+      },
+      "attempts": {
+        "start": 2,
+        "finish": 3
+      },
+      "complete": true,
+      "priorVisual": "none",
+      "specSource": "cached",
+      "provenance": {
+        "generator": "gpt-image-2",
+        "size": "1024x1024",
+        "quality": "high",
+        "styleRefs": [
+          "0.jpg"
+        ],
+        "formSpec": "claude sonnet physiologist pre-pass (state/form-specs/<id>.json)",
+        "verifier": "claude sonnet (strict physiologist gate, spec-anchored)"
+      }
+    },
+    {
+      "id": "upper-trap-stretch",
+      "name": "Upper Trap Stretch",
+      "equipment": "none",
+      "frames": [
+        "assets/howto/ai/upper-trap-stretch/0.jpg",
+        "assets/howto/ai/upper-trap-stretch/1.jpg"
+      ],
+      "verdicts": {
+        "start": "PASS",
+        "finish": "PASS"
+      },
+      "attempts": {
+        "start": 1,
+        "finish": 1
+      },
+      "complete": true,
+      "priorVisual": "none",
+      "specSource": "cached",
+      "provenance": {
+        "generator": "gpt-image-2",
+        "size": "1024x1024",
+        "quality": "high",
+        "styleRefs": [
+          "0.jpg"
+        ],
+        "formSpec": "claude sonnet physiologist pre-pass (state/form-specs/<id>.json)",
+        "verifier": "claude sonnet (strict physiologist gate, spec-anchored)"
+      }
+    },
+    {
+      "id": "levator-scapulae-stretch",
+      "name": "Levator Scapulae Stretch",
+      "equipment": "none",
+      "frames": [
+        "assets/howto/ai/levator-scapulae-stretch/0.jpg",
+        "assets/howto/ai/levator-scapulae-stretch/1.jpg"
+      ],
+      "verdicts": {
+        "start": "PASS",
+        "finish": "PASS"
+      },
+      "attempts": {
+        "start": 1,
+        "finish": 1
+      },
+      "complete": true,
+      "priorVisual": "none",
+      "specSource": "cached",
+      "provenance": {
+        "generator": "gpt-image-2",
+        "size": "1024x1024",
+        "quality": "high",
+        "styleRefs": [
+          "0.jpg"
         ],
         "formSpec": "claude sonnet physiologist pre-pass (state/form-specs/<id>.json)",
         "verifier": "claude sonnet (strict physiologist gate, spec-anchored)"

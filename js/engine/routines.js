@@ -128,7 +128,103 @@ export const KNEE_REHAB_PHASE2 = Object.freeze({
   }],
 });
 
-export const BUILTIN_ROUTINES = [OS_FULL_BODY_ROUTINE, OCCAM_ROUTINE, KNEE_REHAB_PHASE1, KNEE_REHAB_PHASE2];
+// ── Physio (upper back) routines, added 2026-08-01 ───────────────────────────
+// Built after a physio assessment found myofascial trigger points at the left
+// rhomboid / mid-trap and the right infraspinatus. The prescription is the
+// standard pairing for that picture: frequent low-load mobility to stop the
+// segment stiffening, plus scapular-retractor and rotator-cuff strengthening so
+// the tissue stops getting overloaded in the first place. The two routines run
+// together, not in sequence — mobility 2×/day, strength 3×/week.
+const PHYSIO_UPPER_BACK_DISCLAIMER =
+  'Upper-back trigger-point rehab (rhomboid / mid-trap / infraspinatus) — general ' +
+  'mobility and strengthening, not medical advice. Keep everything pain-free: a ' +
+  'mild stretch or muscle burn is fine, sharp pain is not. Stop and see your ' +
+  'physio if pain worsens, or you get numbness, pins and needles, or arm weakness. ' +
+  'Mobility work is unweighted — log reps, or seconds for the timed neck stretches.';
+
+export const PHYSIO_MOBILITY_UPPER_BACK = Object.freeze({
+  id: 'physio-mobility-upper-back',
+  name: 'Physio — Daily Mobility (Upper Back)',
+  builtin: true,
+  source: 'Physio prescription — thoracic mobility + deep neck flexors',
+  disclaimer: PHYSIO_UPPER_BACK_DISCLAIMER,
+  defaultRestSec: 30,
+  days: [{
+    key: 'A',
+    name: 'Daily mobility · 2×/day',
+    exercises: [
+      { exerciseId: 'thoracic-extension-roller', targetSets: 2, targetReps: 10, targetRestSec: 30 },
+      // 2 × 8 per side = four seeded rows, sides pre-assigned.
+      {
+        exerciseId: 'open-book-rotation',
+        targetRestSec: 30,
+        sets: [{ reps: 8, side: 'L' }, { reps: 8, side: 'R' }, { reps: 8, side: 'L' }, { reps: 8, side: 'R' }],
+      },
+      { exerciseId: 'chin-tuck', targetSets: 2, targetReps: 10, targetRestSec: 30 }, // 3 s hold each rep
+      // Two timed neck stretches, added 2026-08-02. Both are 2 × 30 s per side,
+      // so each seeds four rows carrying seconds (not reps) and a pre-assigned
+      // side — the same row-per-side shape the open-book prescription uses.
+      {
+        exerciseId: 'upper-trap-stretch',
+        targetRestSec: 15,
+        sets: [
+          { durationSec: 30, side: 'L' }, { durationSec: 30, side: 'R' },
+          { durationSec: 30, side: 'L' }, { durationSec: 30, side: 'R' },
+        ],
+      },
+      {
+        exerciseId: 'levator-scapulae-stretch',
+        targetRestSec: 15,
+        sets: [
+          { durationSec: 30, side: 'L' }, { durationSec: 30, side: 'R' },
+          { durationSec: 30, side: 'L' }, { durationSec: 30, side: 'R' },
+        ],
+      },
+    ],
+  }],
+});
+
+export const PHYSIO_STRENGTH_UPPER_BACK = Object.freeze({
+  id: 'physio-strength-upper-back',
+  name: 'Physio — Upper Back Strength',
+  builtin: true,
+  source: 'Physio prescription — scapular retractors + rotator cuff',
+  disclaimer: PHYSIO_UPPER_BACK_DISCLAIMER,
+  defaultRestSec: 60,
+  days: [{
+    key: 'A',
+    name: 'Upper back strength · 3×/week',
+    exercises: [
+      { exerciseId: 'hevy-e8d86ee8', targetSets: 3, targetReps: 15, targetRestSec: 60 }, // Band Pullaparts, 1 s squeeze
+      // 3 × 12 per side, slow — six seeded rows.
+      {
+        exerciseId: 'side-lying-external-rotation',
+        targetRestSec: 60,
+        sets: [
+          { reps: 12, side: 'L' }, { reps: 12, side: 'R' },
+          { reps: 12, side: 'L' }, { reps: 12, side: 'R' },
+          { reps: 12, side: 'L' }, { reps: 12, side: 'R' },
+        ],
+      },
+      // 3 × 10 per side — six seeded rows.
+      {
+        exerciseId: 'db-row',
+        targetRestSec: 90,
+        sets: [
+          { reps: 10, side: 'L' }, { reps: 10, side: 'R' },
+          { reps: 10, side: 'L' }, { reps: 10, side: 'R' },
+          { reps: 10, side: 'L' }, { reps: 10, side: 'R' },
+        ],
+      },
+    ],
+  }],
+});
+
+export const BUILTIN_ROUTINES = [
+  OS_FULL_BODY_ROUTINE, OCCAM_ROUTINE,
+  KNEE_REHAB_PHASE1, KNEE_REHAB_PHASE2,
+  PHYSIO_MOBILITY_UPPER_BACK, PHYSIO_STRENGTH_UPPER_BACK,
+];
 
 /** Normalise a (possibly user-authored) routine into the canonical shape. */
 export function makeRoutine(partial = {}) {
@@ -158,6 +254,10 @@ function normaliseRoutineExercise(re) {
       weight: s.weight == null ? null : Number(s.weight),
       reps: s.reps == null ? 0 : Math.max(0, Math.round(s.reps)),
       type: s.type || 'normal',
+      // A "3 × 12 per side" prescription is six sets, not three. Templates may
+      // pin the working side so the seeded workout has a row for each one; the
+      // set-row side toggle still lets the lifter change it.
+      side: s.side === 'L' || s.side === 'R' ? s.side : null,
     }))
     : null;
   return {
@@ -190,11 +290,14 @@ export function routineToWorkout(routine, dayKey, { id = null, startedAtMs = nul
       .map((template) => ({
       weight: template.weight ?? null,
       reps: template.reps || 0,
+      // Timed holds seed seconds instead of reps. Templates that omit it get 0,
+      // exactly as before, so every pre-existing routine seeds byte-identically.
+      durationSec: template.durationSec ?? null,
       type: template.type || 'normal',
       rpe: null,
       completed: false,
       source: 'manual',
-      side: null,
+      side: template.side ?? null,
       camera: null,
     })),
   }));
@@ -240,6 +343,10 @@ export function repeatWorkout(lastWorkout, { id = null, startedAtMs = null } = {
     sets: (ex.sets && ex.sets.length ? ex.sets : [{}]).map((s) => ({
       weight: s.weight ?? null,
       reps: s.reps || 0,
+      // Timed holds carry seconds forward the same way weights are carried.
+      // Without this, repeating a workout containing a duration-tracked
+      // exercise silently resets its target to 0 s.
+      durationSec: s.durationSec || 0,
       type: s.type || 'normal',
       rpe: null,
       completed: false,

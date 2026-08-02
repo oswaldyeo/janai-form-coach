@@ -6701,6 +6701,132 @@ export const HOWTO_BY_ID = Object.freeze({
       "url": "https://github.com/yuhonas/free-exercise-db",
       "license": "Public domain (Unlicense)"
     }
+  },
+  "thoracic-extension-roller": {
+    "steps": [
+      "Sit on the floor with a foam roller behind you and lie back so it sits across your mid-back, at about the level of your lower shoulder blades.",
+      "Lace your fingers behind your head so your hands carry the full weight of your skull, and keep your feet flat and knees bent.",
+      "Brace lightly and keep your ribs down so the bend happens at the mid-back, not by arching your lower back.",
+      "Breathe out and extend back over the roller until you feel a stretch across the mid-back, then return under control.",
+      "Shift the roller an inch or two up or down and repeat so you cover the whole mid-back."
+    ],
+    "cues": "Support your head with your hands — never let it hang back. Ribs stay down: if your lower back arches and your ribs flare, the bend has slipped below the segment you are trying to open. Move slowly, no bouncing, and keep it pain-free.",
+    "images": [
+      "./assets/howto/ai/thoracic-extension-roller/0.jpg",
+      "./assets/howto/ai/thoracic-extension-roller/1.jpg"
+    ],
+    "guidanceSource": null,
+    "visualSource": {
+      "library": "Form Coach AI (gpt-image-2)",
+      "exercise": "AI-generated anatomical illustration",
+      "url": null,
+      "license": "Generated artwork · verifier-gated + human-reviewed"
+    }
+  },
+  "open-book-rotation": {
+    "steps": [
+      "Lie on your side with your knees bent to about 90 degrees and stacked, arms straight out in front at shoulder height and palms together.",
+      "Keep the top knee resting on the floor or a cushion and leave it there for the whole set — hips stay stacked and still.",
+      "Slide the top hand along the bottom arm, then open it in a wide arc across your body toward the floor behind you.",
+      "Let your head and eyes follow the moving hand so the rotation comes from the mid-back rather than the neck or lower back.",
+      "Pause where you feel the stretch across the chest and mid-back, breathe out, then trace the same arc back to the start."
+    ],
+    "cues": "Hips and knees stay stacked and pinned — if the top knee lifts, the rotation has leaked into your lower back. The arm follows the eyes, slowly. Open only as far as is comfortable; do not force the shoulder to the floor.",
+    "images": [
+      "./assets/howto/ai/open-book-rotation/0.jpg",
+      "./assets/howto/ai/open-book-rotation/1.jpg"
+    ],
+    "guidanceSource": null,
+    "visualSource": {
+      "library": "Form Coach AI (gpt-image-2)",
+      "exercise": "AI-generated anatomical illustration",
+      "url": null,
+      "license": "Generated artwork · verifier-gated + human-reviewed"
+    }
+  },
+  "chin-tuck": {
+    "steps": [
+      "Sit or stand tall — or lie on your back with your head resting on the floor — and look straight ahead.",
+      "Keeping your eyes level, glide your chin straight backwards, as if making a double chin.",
+      "Do not nod or tip your head down: this is a horizontal glide of the head over the neck, nothing more.",
+      "Hold the retracted position for about three seconds, breathing normally.",
+      "Release slowly back to neutral and repeat."
+    ],
+    "cues": "Make a double chin — glide straight back, never nod down. Eyes and jawline stay level the whole time. Expect a mild stretch at the base of the skull and light work at the front of the neck; stop if you get sharp neck pain, dizziness, or pins and needles.",
+    "images": [
+      "./assets/howto/ai/chin-tuck/0.jpg",
+      "./assets/howto/ai/chin-tuck/1.jpg"
+    ],
+    "guidanceSource": null,
+    "visualSource": {
+      "library": "Form Coach AI (gpt-image-2)",
+      "exercise": "AI-generated anatomical illustration",
+      "url": null,
+      "license": "Generated artwork · verifier-gated + human-reviewed"
+    }
+  },
+  "side-lying-external-rotation": {
+    "steps": [
+      "Lie on your side on a bench or the floor with the working arm on top, holding a light dumbbell in that hand.",
+      "Rest your head on your lower arm and tuck the working upper arm against your ribs with the elbow bent to 90 degrees.",
+      "Start with the forearm across your stomach, palm facing in — this is the bottom position.",
+      "Keeping the elbow pinned to your side, rotate the forearm upward until it points toward the ceiling.",
+      "Pause briefly at the top, then lower slowly back across your stomach under control."
+    ],
+    "cues": "Go light — this trains the rotator cuff, not the delts. Only the forearm moves; the upper arm stays glued to your ribs. If the shoulder shrugs or the elbow drifts off your side, the dumbbell is too heavy. Lower slower than you lift.",
+    "images": [
+      "./assets/howto/library/side-lying-external-rotation-2337bc43f8/0.jpg",
+      "./assets/howto/library/side-lying-external-rotation-09d327eb00/1.jpg"
+    ],
+    "guidanceSource": "https://github.com/yuhonas/free-exercise-db/blob/main/exercises/External_Rotation",
+    "visualSource": {
+      "library": "yuhonas/free-exercise-db",
+      "exercise": "External Rotation",
+      "url": "https://github.com/yuhonas/free-exercise-db",
+      "license": "Public domain (Unlicense)"
+    }
+  },
+  "upper-trap-stretch": {
+    "steps": [
+      "Sit tall on a firm chair with both feet flat on the floor and your shoulders level.",
+      "Tuck the hand on the side you are stretching under the edge of the seat and hold it there — that anchor is what keeps the shoulder from riding up.",
+      "Keeping your eyes forward and your chin level, tilt your head so that ear travels toward the opposite shoulder.",
+      "Reach the free hand over the top of your head, rest it on the side of your skull, and let its weight add only the gentlest overpressure.",
+      "Hold for about 30 seconds, breathing normally, then release slowly and swap sides."
+    ],
+    "cues": "The anchored shoulder must not hike — if it rides up toward your ear the stretch has left the trap entirely. Tilt, do not turn or nod: eyes stay forward and the chin stays level. The free hand rests, it never pulls. You should feel a broad stretch down the side of the neck into the top of the shoulder — stop for sharp pain, pins and needles, or dizziness.",
+    "images": [
+      "./assets/howto/ai/upper-trap-stretch/0.jpg",
+      "./assets/howto/ai/upper-trap-stretch/1.jpg"
+    ],
+    "guidanceSource": null,
+    "visualSource": {
+      "library": "Form Coach AI (gpt-image-2)",
+      "exercise": "AI-generated anatomical illustration",
+      "url": null,
+      "license": "Generated artwork · verifier-gated + human-reviewed"
+    }
+  },
+  "levator-scapulae-stretch": {
+    "steps": [
+      "Sit tall on a firm chair and tuck the hand on the side you are stretching under the edge of the seat, so that shoulder stays pinned down.",
+      "Turn your head about 45 degrees away from the anchored side, as if looking across the room.",
+      "Holding that rotation, drop your gaze down toward the opposite armpit until you feel a stretch where the neck meets the shoulder blade.",
+      "Rest the free hand on the back of your head and let its weight add gentle overpressure — no pulling.",
+      "Hold for about 30 seconds, breathing normally, then release slowly and swap sides."
+    ],
+    "cues": "Rotate first, then look down — that order is what targets levator scapulae rather than the trap. Keep the anchored shoulder pinned under the seat; letting it hike removes the stretch completely. The free hand adds its own weight and nothing more. The stretch belongs at the back and side of the neck toward the top of the shoulder blade — stop for sharp pain, pins and needles, or dizziness.",
+    "images": [
+      "./assets/howto/ai/levator-scapulae-stretch/0.jpg",
+      "./assets/howto/ai/levator-scapulae-stretch/1.jpg"
+    ],
+    "guidanceSource": null,
+    "visualSource": {
+      "library": "Form Coach AI (gpt-image-2)",
+      "exercise": "AI-generated anatomical illustration",
+      "url": null,
+      "license": "Generated artwork · verifier-gated + human-reviewed"
+    }
   }
 });
 

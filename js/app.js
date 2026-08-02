@@ -738,10 +738,14 @@ function openHowto(id) {
   ).join('');
   show($('howto-images'), howto.images.length > 0);
   const visualSource = howto.visualSource;
+  // Provenance is load-bearing, not decoration: an AI-generated figure must
+  // never be presented as a real public-domain demonstration of a human lifting.
   $('howto-source').textContent = visualSource
     ? (visualSource.library === 'Form Coach original'
       ? `${visualSource.exercise} · Form Coach original artwork`
-      : `Public-domain demo: ${visualSource.exercise} · free-exercise-db`)
+      : (String(visualSource.library || '').startsWith('Form Coach AI')
+        ? `AI-generated illustration (${visualSource.library}) — drawn to a reviewed form spec, not a photo of a real lift`
+        : `Public-domain demo: ${visualSource.exercise} · free-exercise-db`))
     : '';
   show($('howto-source'), !!visualSource);
   $('howto-steps').innerHTML = howto.steps.map((step) => `<li>${esc(step)}</li>`).join('');

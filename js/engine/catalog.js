@@ -157,6 +157,51 @@ const LOCAL_CATALOG = [
   },
 ];
 
+// ── physio (upper-back trigger point) additions, added 2026-08-01 ────────────
+// Built for Os's rhomboid / mid-trap / infraspinatus rehab. Manual-log only —
+// none of these are visible enough to a 2D camera to justify a coach button.
+//
+// ⚠️ These are appended AFTER the Hevy imports on purpose. The how-to builder
+// (scripts/build-full-howto.mjs) pins each research row to its CATALOG_LIST
+// index; inserting into LOCAL_CATALOG would renumber all 433 Hevy rows and
+// force a rewrite of every research batch file. Appending keeps those indices
+// stable and confines the new rows to research/full-catalog/batch-455-458.json.
+const PHYSIO_CATALOG = [
+  {
+    id: 'thoracic-extension-roller', name: 'Thoracic Extension (Foam Roller)', category: 'other', equipment: 'other',
+    primaryMuscle: 'upper_back', secondaryMuscles: ['chest'],
+    loadType: 'bodyweight', trackingType: 'reps_only', unilateral: false, defaultRestSec: 30, camera: null,
+  },
+  {
+    id: 'open-book-rotation', name: 'Open-Book Rotation', category: 'other', equipment: 'none',
+    primaryMuscle: 'upper_back', secondaryMuscles: ['chest', 'abdominals'],
+    loadType: 'bodyweight', trackingType: 'reps_only', unilateral: true, defaultRestSec: 30, camera: null,
+  },
+  {
+    id: 'chin-tuck', name: 'Chin Tuck', category: 'other', equipment: 'none',
+    primaryMuscle: 'neck', secondaryMuscles: ['upper_back'],
+    loadType: 'bodyweight', trackingType: 'reps_only', unilateral: false, defaultRestSec: 30, camera: null,
+  },
+  {
+    id: 'side-lying-external-rotation', name: 'Side-Lying External Rotation (Dumbbell)', category: 'pull', equipment: 'dumbbell',
+    primaryMuscle: 'shoulders', secondaryMuscles: ['upper_back'],
+    loadType: 'external', trackingType: 'weight_reps', unilateral: true, defaultRestSec: 60, camera: null,
+  },
+  // Added 2026-08-02. Both are timed static holds, not rep work, so they use
+  // `duration` tracking (the app logs seconds) rather than the `reps_only`
+  // convention the three mobility drills above use.
+  {
+    id: 'upper-trap-stretch', name: 'Upper Trap Stretch', category: 'other', equipment: 'none',
+    primaryMuscle: 'neck', secondaryMuscles: ['upper_back'],
+    loadType: 'bodyweight', trackingType: 'duration', unilateral: true, defaultRestSec: 15, camera: null,
+  },
+  {
+    id: 'levator-scapulae-stretch', name: 'Levator Scapulae Stretch', category: 'other', equipment: 'none',
+    primaryMuscle: 'neck', secondaryMuscles: ['upper_back'],
+    loadType: 'bodyweight', trackingType: 'duration', unilateral: true, defaultRestSec: 15, camera: null,
+  },
+];
+
 // These Hevy templates are represented by richer local entries above (stable
 // IDs preserve old workout history and camera implementations). Every other
 // official Hevy template is included as a manual-tracking exercise.
@@ -169,6 +214,7 @@ const HEVY_REPLACED_BY_LOCAL = new Set([
 const CATALOG = [
   ...LOCAL_CATALOG,
   ...HEVY_CATALOG.filter((e) => !HEVY_REPLACED_BY_LOCAL.has(e.hevyId)),
+  ...PHYSIO_CATALOG,
 ];
 
 const BY_ID = Object.freeze(CATALOG.reduce((m, e) => { m[e.id] = e; return m; }, {}));
