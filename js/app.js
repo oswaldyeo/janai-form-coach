@@ -733,11 +733,14 @@ function openHowto(id) {
   if (!howto) return;
   const cat = getCatalogEntry(id);
   $('howto-title').textContent = cat ? cat.name : id;
+  const visualSource = howto.visualSource;
+  // AI frames are square (1024×1024); the default 3:2 cover-crop beheads the
+  // figure. Render them uncropped at their native aspect.
+  const aiFrames = String((visualSource && visualSource.library) || '').startsWith('Form Coach AI');
   $('howto-images').innerHTML = howto.images.map((src, index) =>
-    `<img src="${esc(src)}" alt="${esc(cat ? cat.name : id)} demonstration ${index + 1}" />`
+    `<img${aiFrames ? ' class="ai-frame"' : ''} src="${esc(src)}" alt="${esc(cat ? cat.name : id)} demonstration ${index + 1}" />`
   ).join('');
   show($('howto-images'), howto.images.length > 0);
-  const visualSource = howto.visualSource;
   // Provenance is load-bearing, not decoration: an AI-generated figure must
   // never be presented as a real public-domain demonstration of a human lifting.
   $('howto-source').textContent = visualSource
