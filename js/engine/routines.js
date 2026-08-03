@@ -73,6 +73,42 @@ export const OS_FULL_BODY_ROUTINE = Object.freeze({
   }],
 });
 
+// Os's knee-friendly recovery session, built 2026-08-03 while recovering from
+// runner's knee (PFPS). Mirrors Os' Full Body but routes around the joint: the
+// two knee-dominant lifts (goblet squat, split squat) are swapped for a hip
+// hinge (RDL) + a glute bridge-pattern (hip thrust), and cable twist is swapped
+// for cable hip abduction — glute-med work that directly strengthens the usual
+// PFPS culprit. Upper body unchanged. Also built into the Hevy app as
+// "Full Body — Knee-Friendly (Recovery)". Full session, zero deep-knee loading.
+const KNEE_FRIENDLY_DISCLAIMER =
+  'Runner\'s-knee-friendly full-body session — general strengthening, not medical ' +
+  'advice. Stop 1–2 reps shy of failure (RPE 8–9), rest ~90 s. Dull fatigue is fine; ' +
+  'sharp knee pain means stop that move. The RDL is a hip HINGE, not a squat.';
+
+export const KNEE_FRIENDLY_FULL_BODY = Object.freeze({
+  id: 'knee-friendly-recovery',
+  name: 'Full Body · Knee-Friendly (Recovery)',
+  builtin: true,
+  source: 'Hevy · Full Body — Knee-Friendly (Recovery), 2026-08-03',
+  disclaimer: KNEE_FRIENDLY_DISCLAIMER,
+  defaultRestSec: 90,
+  days: [{
+    key: 'A',
+    name: 'Full workout · knee-safe',
+    exercises: [
+      { exerciseId: 'bench-press', sets: [{ weight: 52, reps: 12 }, { weight: 52, reps: 12 }, { weight: 52, reps: 12 }] },
+      { exerciseId: 'hevy-72cffad5', sets: [{ weight: 24, reps: 10 }, { weight: 24, reps: 10 }, { weight: 24, reps: 10 }] }, // Romanian Deadlift (DB) — knee swap for goblet squat
+      { exerciseId: 'shoulder-press', sets: [{ weight: 36, reps: 12 }, { weight: 36, reps: 12 }, { weight: 36, reps: 12 }] },
+      { exerciseId: 'db-row', sets: [{ weight: 20, reps: 12 }, { weight: 20, reps: 12 }, { weight: 20, reps: 12 }] },
+      { exerciseId: 'hevy-da5430fc', sets: [{ weight: 24, reps: 12 }, { weight: 24, reps: 12 }, { weight: 24, reps: 12 }] }, // Hip Thrust (DB) — knee swap for split squat
+      { exerciseId: 'skull-crusher', sets: [{ weight: 16, reps: 12 }, { weight: 16, reps: 12 }, { weight: 16, reps: 12 }] },
+      { exerciseId: 'bicep-curl', sets: [{ weight: 10, reps: 12 }, { weight: 10, reps: 12 }, { weight: 10, reps: 12 }] },
+      { exerciseId: 'triceps-pushdown', sets: [{ weight: 18, reps: 12 }, { weight: 18, reps: 12 }, { weight: 18, reps: 12 }] },
+      { exerciseId: 'hevy-c469ea70', sets: [{ weight: 5, reps: 15 }, { weight: 5, reps: 15 }, { weight: 5, reps: 15 }] }, // Hip Abduction (Cable) — glute-med rehab
+    ],
+  }],
+});
+
 // ── Knee-rehab (PFPS / "runner's knee") routines, added 2026-07-24 ───────────
 // Built for Os's anterior knee pain (worse up stairs, +theatre sign, no tendon
 // point-tenderness → patellofemoral pain syndrome). Follows the 2019 PFP
@@ -221,6 +257,7 @@ export const PHYSIO_STRENGTH_UPPER_BACK = Object.freeze({
 });
 
 export const BUILTIN_ROUTINES = [
+  KNEE_FRIENDLY_FULL_BODY,
   OS_FULL_BODY_ROUTINE, OCCAM_ROUTINE,
   KNEE_REHAB_PHASE1, KNEE_REHAB_PHASE2,
   PHYSIO_MOBILITY_UPPER_BACK, PHYSIO_STRENGTH_UPPER_BACK,
