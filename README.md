@@ -25,7 +25,8 @@ tracker.
 - **Crash-safe active workout** — the in-progress workout is persisted on every
   change and auto-resumed after a refresh, tab kill, or crash.
 - **Routines** — built-in presets (*Occam-style A/B*, Os' Full Body, two knee-rehab
-  phases, and two physio upper-back routines), plus start-empty, repeat-last, and
+  phases, two physio upper-back routines, and a daily physio home programme), plus
+  start-empty, repeat-last, and
   save-current-workout-as-routine. Rehab presets state their prescribed frequency
   in the day name; the app does not schedule or police it. A "3 × 12 per side"
   prescription seeds six rows with the working side pre-assigned.
@@ -36,7 +37,7 @@ tracker.
   triceps pushdown, one-arm DB row (experimental camera) and cable twist
   (manual), plus manually-tracked foundational lifts (lat pulldown, leg press,
   RDL, deadlift, calf raise, plank).
-- **Exercise how-to panels** — all 461 exercises in the full catalog have
+- **Exercise how-to panels** — all 464 exercises in the full catalog have
   numbered setup/execution steps and form cues.
   Faithful public-domain demonstrations are bundled locally from
   `yuhonas/free-exercise-db`. Where no faithful photograph exists, a small number

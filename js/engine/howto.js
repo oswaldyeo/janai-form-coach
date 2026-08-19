@@ -2681,9 +2681,17 @@ export const HOWTO_BY_ID = Object.freeze({
       "Complete all reps, then switch sides."
     ],
     "cues": "Hips stay level — don't hike the hip to get the leg higher. Pure side-movement of the hip.",
-    "images": [],
+    "images": [
+      "./assets/howto/ai/hevy-c469ea70/0.jpg",
+      "./assets/howto/ai/hevy-c469ea70/1.jpg"
+    ],
     "guidanceSource": "authored",
-    "visualSource": null
+    "visualSource": {
+      "library": "Form Coach AI (gpt-image-2)",
+      "exercise": "AI-generated anatomical illustration",
+      "url": null,
+      "license": "Generated artwork · verifier-gated + human-reviewed"
+    }
   },
   "hevy-f4b4c6ee": {
     "steps": [
@@ -2757,15 +2765,23 @@ export const HOWTO_BY_ID = Object.freeze({
   },
   "hevy-da5430fc": {
     "steps": [
-      "Sit with your upper back against a bench, a dumbbell resting on your hip crease.",
-      "Feet flat, knees bent.",
-      "Drive through your heels to extend your hips until the body is in a straight line.",
-      "Squeeze glutes at the top, then lower with control."
+      "Sit on the floor with your upper back against the long edge of a bench, knees bent and feet flat.",
+      "Rest a dumbbell across your hip crease and hold it steady with both hands.",
+      "Tuck your chin and drive through your heels to lift your hips until your body is straight from knees to shoulders.",
+      "Squeeze the glutes hard at the top, then lower with control until your hips are just off the floor."
     ],
-    "cues": "Hold the dumbbell steady with both hands. Same cue as barbell: glutes drive, not the lower back.",
-    "images": [],
+    "cues": "Hold the dumbbell steady with both hands — it sits ON the hip crease, it is not lifted by the arms. Drive through the heels and finish with the shins vertical; if your feet are too far forward the hamstrings take over, too close and the knees do. Ribs down and chin tucked so the lift comes from the glutes, not from arching the lower back. Same cue as the barbell version: glutes drive, spine stays neutral.",
+    "images": [
+      "./assets/howto/ai/hevy-da5430fc/0.jpg",
+      "./assets/howto/ai/hevy-da5430fc/1.jpg"
+    ],
     "guidanceSource": "https://github.com/yuhonas/free-exercise-db",
-    "visualSource": null
+    "visualSource": {
+      "library": "Form Coach AI (gpt-image-2)",
+      "exercise": "AI-generated anatomical illustration",
+      "url": null,
+      "license": "Generated artwork · verifier-gated + human-reviewed"
+    }
   },
   "hevy-68ce0b9b": {
     "steps": [
@@ -6809,16 +6825,79 @@ export const HOWTO_BY_ID = Object.freeze({
   },
   "levator-scapulae-stretch": {
     "steps": [
-      "Sit tall on a firm chair and tuck the hand on the side you are stretching under the edge of the seat, so that shoulder stays pinned down.",
+      "Sit tall on a firm chair and pin the shoulder on the side you are stretching down and back — Bertrand's programme puts that arm behind your back, hand resting in the small of it; tucking the same hand under the edge of the seat works just as well.",
       "Turn your head about 45 degrees away from the anchored side, as if looking across the room.",
       "Holding that rotation, drop your gaze down toward the opposite armpit until you feel a stretch where the neck meets the shoulder blade.",
       "Rest the free hand on the back of your head and let its weight add gentle overpressure — no pulling.",
       "Hold for about 30 seconds, breathing normally, then release slowly and swap sides."
     ],
-    "cues": "Rotate first, then look down — that order is what targets levator scapulae rather than the trap. Keep the anchored shoulder pinned under the seat; letting it hike removes the stretch completely. The free hand adds its own weight and nothing more. The stretch belongs at the back and side of the neck toward the top of the shoulder blade — stop for sharp pain, pins and needles, or dizziness.",
+    "cues": "Rotate first, then look down — that order is what targets levator scapulae rather than the trap. Keep the stretched-side shoulder pinned; letting it hike removes the stretch completely. The arm-behind-the-back anchor Bertrand prescribes does that job by pulling the shoulder down and back, and it is the harder one to cheat — under-the-seat is the fallback if the shoulder will not reach. The free hand adds its own weight and nothing more. The stretch belongs at the back and side of the neck toward the top of the shoulder blade — stop for sharp pain, pins and needles, or dizziness.",
     "images": [
       "./assets/howto/ai/levator-scapulae-stretch/0.jpg",
       "./assets/howto/ai/levator-scapulae-stretch/1.jpg"
+    ],
+    "guidanceSource": null,
+    "visualSource": {
+      "library": "Form Coach AI (gpt-image-2)",
+      "exercise": "AI-generated anatomical illustration",
+      "url": null,
+      "license": "Generated artwork · verifier-gated + human-reviewed"
+    }
+  },
+  "scapular-depression": {
+    "steps": [
+      "Sit or stand tall with your feet flat on the floor and both arms hanging loose at your sides.",
+      "Lengthen the back of your neck so the crown of your head reaches for the ceiling — this is the starting position.",
+      "Without bending your elbows, slide both shoulder blades straight down your back, away from your ears, as if tucking them into your back pockets.",
+      "Hold that lowered position for about 3 seconds, breathing normally.",
+      "Let the shoulders float slowly back up to resting height before the next rep."
+    ],
+    "cues": "Make your neck long, blades into your back pockets, no elbow bending. The arms stay dead weight — if your elbows flex or your hands press down on the seat, the lats and triceps have taken over the job the lower traps are meant to do. Move the blades DOWN only, not back into a squeeze: this is depression, not retraction. Keep the chin level and the ribs down. A mild working ache low between the shoulder blades is right; sharp pain, or a shrug that creeps back up during the hold, is not.",
+    "images": [
+      "./assets/howto/ai/scapular-depression/0.jpg",
+      "./assets/howto/ai/scapular-depression/1.jpg"
+    ],
+    "guidanceSource": null,
+    "visualSource": {
+      "library": "Form Coach AI (gpt-image-2)",
+      "exercise": "AI-generated anatomical illustration",
+      "url": null,
+      "license": "Generated artwork · verifier-gated + human-reviewed"
+    }
+  },
+  "side-lying-hip-abduction": {
+    "steps": [
+      "Lie on your side on a mat with hips and shoulders stacked vertically and your body in one straight line, head resting on the bottom arm.",
+      "Bend the bottom knee for a stable base if you need one, and keep the top leg straight with the knee locked.",
+      "Roll the top hip a few degrees forward so the kneecap points ahead of you rather than at the ceiling.",
+      "Lead with the heel and lift the top leg to about 45 degrees, keeping it in line with your torso.",
+      "Pause at the top, then lower slowly without letting the leg drift forward."
+    ],
+    "cues": "Top leg straight, heel leads, hips stacked and tilted slightly forward — that combination is what puts the work in the side of the hip rather than the hip flexor. The lift comes from the side-hip, never from the lower back: if your waist arches or your top hip rolls backward toward the floor, you have gone too high. Height is not the point, so 45 degrees done clean beats a bigger swing. Keep the bottom ribs down and breathe out as the leg rises.",
+    "images": [
+      "./assets/howto/ai/side-lying-hip-abduction/0.jpg",
+      "./assets/howto/ai/side-lying-hip-abduction/1.jpg"
+    ],
+    "guidanceSource": null,
+    "visualSource": {
+      "library": "Form Coach AI (gpt-image-2)",
+      "exercise": "AI-generated anatomical illustration",
+      "url": null,
+      "license": "Generated artwork · verifier-gated + human-reviewed"
+    }
+  },
+  "hamstring-stretch-supine": {
+    "steps": [
+      "Lie on your back on a mat with both legs extended and your head and shoulders resting down.",
+      "Draw one thigh up until the hip is bent to about 90 degrees — thigh pointing straight at the ceiling — and clasp both hands behind that thigh, just above the back of the knee.",
+      "Keep the opposite leg flat on the floor with the heel pressed down; letting it drift up hides the stretch.",
+      "Holding the thigh still and vertical, slowly straighten that knee toward the ceiling until you feel a mild pull behind the thigh.",
+      "Hold for about 30 seconds, breathing normally, then bend the knee to release and swap sides."
+    ],
+    "cues": "The thigh does not move — only the knee does. Hold the thigh vertical with your hands and straighten the knee against it; if the thigh drifts away from you as the knee opens, you have given the stretch back. The down leg stays pinned to the floor with the toes pointing up, and the head and shoulders stay resting on the mat rather than curling toward the knee. The knee never has to lock out fully — go to a mild pull and stop, no bouncing. Numbness, tingling, or pain running down the back of the leg means stop; that is nerve, not muscle.",
+    "images": [
+      "./assets/howto/ai/hamstring-stretch-supine/0.jpg",
+      "./assets/howto/ai/hamstring-stretch-supine/1.jpg"
     ],
     "guidanceSource": null,
     "visualSource": {

@@ -202,6 +202,48 @@ const PHYSIO_CATALOG = [
   },
 ];
 
+// ── Bertrand Rehab additions, added 2026-08-18, revised 2026-08-19 ───────────
+// Three movements from the home programme Os's in-person physiotherapist
+// prescribed. The other two items in that programme reuse existing catalog
+// entries (levator scapulae stretch, Shrug (Dumbbell)) rather than duplicating
+// them, and the 19 Aug realignment against the physio's own app added a third
+// reuse — the upper trap stretch already built for the 2026-08-02 set.
+// Appended after PHYSIO_CATALOG for the same index-stability reason documented
+// above: these become 461-463 and every earlier row keeps its index.
+//
+// Deliberately NOT reusing `hevy-dc59d143` (Lateral Leg Raises) for the
+// side-lying abduction: its authored steps say side-lying, but the bundled
+// public-domain photos show a STANDING chair-supported leg raise, so it would
+// have illustrated the wrong position.
+//
+// `scapular-depression` is NOT in the routine as of 19 Aug — it appears in
+// Bertrand's written memo but not in the app programme he actually assigned.
+// The entry and its illustrations stay so it can be added back without a
+// rebuild, and so any history logged against it survives.
+const BERTRAND_CATALOG = [
+  {
+    id: 'scapular-depression', name: 'Scapular Depression', category: 'other', equipment: 'none',
+    primaryMuscle: 'traps', secondaryMuscles: ['upper_back'],
+    loadType: 'bodyweight', trackingType: 'reps_only', unilateral: false, defaultRestSec: 45, camera: null,
+  },
+  {
+    id: 'side-lying-hip-abduction', name: 'Side-Lying Hip Abduction', category: 'legs', equipment: 'none',
+    primaryMuscle: 'abductors', secondaryMuscles: ['glutes'],
+    loadType: 'bodyweight', trackingType: 'reps_only', unilateral: true, defaultRestSec: 45, camera: null,
+  },
+  // Renamed on 19 Aug from `hamstring-mobility-strap` / "Hamstring Mobility
+  // (Supine, Strap)". Bertrand's app prescribes "Hamstring stretch,
+  // straightening leg": hip held at 90° and the KNEE straightened toward the
+  // ceiling, hands behind the thigh, no strap. That is a different variant with
+  // different equipment, so the old id would have been a lie in the picker.
+  // Safe to rename — the strap entry was added 18 Aug and never deployed.
+  {
+    id: 'hamstring-stretch-supine', name: 'Hamstring Stretch (Supine, Straightening Leg)', category: 'other', equipment: 'none',
+    primaryMuscle: 'hamstrings', secondaryMuscles: ['calves'],
+    loadType: 'bodyweight', trackingType: 'duration', unilateral: true, defaultRestSec: 15, camera: null,
+  },
+];
+
 // These Hevy templates are represented by richer local entries above (stable
 // IDs preserve old workout history and camera implementations). Every other
 // official Hevy template is included as a manual-tracking exercise.
@@ -215,6 +257,7 @@ const CATALOG = [
   ...LOCAL_CATALOG,
   ...HEVY_CATALOG.filter((e) => !HEVY_REPLACED_BY_LOCAL.has(e.hevyId)),
   ...PHYSIO_CATALOG,
+  ...BERTRAND_CATALOG,
 ];
 
 const BY_ID = Object.freeze(CATALOG.reduce((m, e) => { m[e.id] = e; return m; }, {}));

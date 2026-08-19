@@ -256,11 +256,84 @@ export const PHYSIO_STRENGTH_UPPER_BACK = Object.freeze({
   }],
 });
 
+// ── Physio — Bertrand Rehab, added 2026-08-18, realigned 2026-08-19 ──────────
+// The home programme from Os's in-person physiotherapy assessment. Run daily,
+// as one session — it mixes two neck stretches, trap work, and two lower-body
+// drills, so it is not split by region the way the upper-back pair above is.
+//
+// The 19 Aug realignment replaces the 18 Aug reconstruction (built from the
+// written memo) with Bertrand's own app programme, "Cervical & Hips program",
+// 18 Aug 2026 – 25 Jan 2027. The list below IS that programme, in his order.
+// Two deltas are worth knowing:
+//   • Trapezius Stretch was in the app but not the memo → added, third.
+//   • Scapular Depression was in the memo but not the app → removed from this
+//     routine. Its catalog entry and illustrations stay put (see catalog.js),
+//     because it may come back at the next review and re-adding it should be a
+//     one-line change, not a rebuild.
+//
+// Three of the five movements REUSE existing catalog entries rather than
+// duplicating them, so history stays in one place: the levator scapulae and
+// upper trap stretches carried over from the 2026-08-01/02 upper-back sets, and
+// Hevy's Shrug (Dumbbell) for what the app calls "Shoulder shrugs — Scapular
+// elevation". The shrug seeds no weight: the app leaves load open (shrugs are
+// prescribed through full range, loaded or not), so the lifter enters whatever
+// they actually used.
+const PHYSIO_BERTRAND_DISCLAIMER =
+  'Home programme from an in-person physiotherapy assessment — general mobility ' +
+  'and strengthening, not medical advice. Keep everything pain-free: a mild ' +
+  'stretch or muscle burn is fine, sharp pain is not. Stop and see your physio ' +
+  'if pain worsens, or you get numbness, pins and needles, or weakness. Shrugs ' +
+  'are deliberately light. The three stretches are timed holds — log seconds, ' +
+  'not reps.';
+
+// 2 × 30 s per side — four timed rows carrying seconds, not reps. All three
+// stretches in this programme share the dosage, so they share the shape.
+function stretchHoldSets() {
+  return [
+    { durationSec: 30, side: 'L' }, { durationSec: 30, side: 'R' },
+    { durationSec: 30, side: 'L' }, { durationSec: 30, side: 'R' },
+  ];
+}
+
+export const PHYSIO_BERTRAND_REHAB = Object.freeze({
+  id: 'physio-bertrand-rehab',
+  name: 'Physio — Bertrand Rehab',
+  builtin: true,
+  source: 'Physio prescription — Cervical & Hips program (18 Aug 2026 – 25 Jan 2027)',
+  disclaimer: PHYSIO_BERTRAND_DISCLAIMER,
+  defaultRestSec: 45,
+  days: [{
+    key: 'A',
+    name: 'Home programme · daily',
+    exercises: [
+      // 1. Levator scapulae stretch, arm behind back.
+      { exerciseId: 'levator-scapulae-stretch', targetRestSec: 15, sets: stretchHoldSets() },
+      // 2. "Shoulder shrugs" — scapular elevation. Shrug (Dumbbell), light.
+      { exerciseId: 'hevy-abec557f', targetSets: 3, targetReps: 12, targetRestSec: 60 },
+      // 3. Trapezius stretch.
+      { exerciseId: 'upper-trap-stretch', targetRestSec: 15, sets: stretchHoldSets() },
+      // 4. Hip abduction strengthening, side-lying — 3 × 12 per side, six rows.
+      {
+        exerciseId: 'side-lying-hip-abduction',
+        targetRestSec: 45,
+        sets: [
+          { reps: 12, side: 'L' }, { reps: 12, side: 'R' },
+          { reps: 12, side: 'L' }, { reps: 12, side: 'R' },
+          { reps: 12, side: 'L' }, { reps: 12, side: 'R' },
+        ],
+      },
+      // 5. Hamstring stretch, straightening leg.
+      { exerciseId: 'hamstring-stretch-supine', targetRestSec: 15, sets: stretchHoldSets() },
+    ],
+  }],
+});
+
 export const BUILTIN_ROUTINES = [
   KNEE_FRIENDLY_FULL_BODY,
   OS_FULL_BODY_ROUTINE, OCCAM_ROUTINE,
   KNEE_REHAB_PHASE1, KNEE_REHAB_PHASE2,
   PHYSIO_MOBILITY_UPPER_BACK, PHYSIO_STRENGTH_UPPER_BACK,
+  PHYSIO_BERTRAND_REHAB,
 ];
 
 /** Normalise a (possibly user-authored) routine into the canonical shape. */
@@ -290,6 +363,11 @@ function normaliseRoutineExercise(re) {
     ? re.sets.map((s) => ({
       weight: s.weight == null ? null : Number(s.weight),
       reps: s.reps == null ? 0 : Math.max(0, Math.round(s.reps)),
+      // Timed holds carry seconds, exactly as `repeatWorkout` already does.
+      // Without this line, normalising any routine containing a duration-tracked
+      // exercise silently drops the prescription: the three 2 × 30 s stretches in
+      // Physio — Bertrand Rehab come back as four 0-second rows.
+      durationSec: s.durationSec == null ? null : Math.max(0, Math.round(s.durationSec)),
       type: s.type || 'normal',
       // A "3 × 12 per side" prescription is six sets, not three. Templates may
       // pin the working side so the seeded workout has a row for each one; the

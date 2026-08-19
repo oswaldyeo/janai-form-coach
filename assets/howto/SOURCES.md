@@ -1,7 +1,7 @@
 # How-to visual sources
 
-Form Coach contains authored guidance for all **461** catalog exercises.
-It includes visuals for **156** exercises: **143** public-domain demonstrations, **8** reviewed original movement diagrams, and **5** AI-generated illustrations. **305** remain text-only pending accurate original visuals.
+Form Coach contains authored guidance for all **464** catalog exercises.
+It includes visuals for **161** exercises: **143** public-domain demonstrations, **8** reviewed original movement diagrams, and **10** AI-generated illustrations. **303** remain text-only pending accurate original visuals.
 
 Public demonstrations come from [`yuhonas/free-exercise-db`](https://github.com/yuhonas/free-exercise-db) under the Unlicense. Medium-confidence and unmatched library candidates are never bundled automatically. Original SVG diagrams are deterministic Form Coach artwork retained in editable source form.
 
@@ -64,11 +64,14 @@ Public demonstrations come from [`yuhonas/free-exercise-db`](https://github.com/
 | `hevy-4180c405` | Good Morning (Barbell) | Good Morning · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
 | `hevy-1e42fd5f` | Hack Squat (Machine) | Hack Squat · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
 | `hevy-7e3bc8b6` | Hammer Curl (Dumbbell) | Alternate Hammer Curl · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
+| `hamstring-stretch-supine` | Hamstring Stretch (Supine, Straightening Leg) | AI-generated anatomical illustration · Form Coach AI (gpt-image-2) | Generated artwork · verifier-gated + human-reviewed · ai-verified |
 | `hevy-90b04f96` | Handstand Push Up | Handstand Push-Ups · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
 | `hevy-bd4e7e53` | Hang Clean | Hang Clean · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
 | `hevy-f4e77594` | Hang Snatch | Hang Snatch · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
 | `hevy-f8356514` | Hanging Leg Raise | Hanging Leg Raise · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
+| `hevy-c469ea70` | Hip Abduction (Cable) | AI-generated anatomical illustration · Form Coach AI (gpt-image-2) | Generated artwork · verifier-gated + human-reviewed · ai-verified |
 | `hevy-d57c2ec7` | Hip Thrust (Barbell) | Barbell Hip Thrust · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
+| `hevy-da5430fc` | Hip Thrust (Dumbbell) | AI-generated anatomical illustration · Form Coach AI (gpt-image-2) | Generated artwork · verifier-gated + human-reviewed · ai-verified |
 | `hevy-50dfdfab` | Incline Bench Press (Barbell) | Barbell Incline Bench Press - Medium Grip · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
 | `hevy-07b38369` | Incline Bench Press (Dumbbell) | Incline Dumbbell Press · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
 | `hevy-3a6fa3d1` | Incline Bench Press (Smith Machine) | Smith Machine Incline Bench Press · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
@@ -125,6 +128,7 @@ Public demonstrations come from [`yuhonas/free-exercise-db`](https://github.com/
 | `hevy-72cffad5` | Romanian Deadlift (Dumbbell) | Romanian Deadlift · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
 | `hevy-bb83bdde` | Russian Twist (Bodyweight) | Russian Twist · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
 | `hevy-2982aa23` | Russian Twist (Weighted) | Russian Twist · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
+| `scapular-depression` | Scapular Depression | AI-generated anatomical illustration · Form Coach AI (gpt-image-2) | Generated artwork · verifier-gated + human-reviewed · ai-verified |
 | `hevy-f1d60854` | Seated Cable Row - Bar Grip | Seated Cable Rows · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
 | `hevy-062ab91a` | Seated Calf Raise | Seated Calf Raise · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
 | `hevy-5122e7d9` | Seated Dip Machine | Dip Machine · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
@@ -136,7 +140,8 @@ Public demonstrations come from [`yuhonas/free-exercise-db`](https://github.com/
 | `hevy-0b841777` | Shrug (Barbell) | Barbell Shrug · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
 | `hevy-abec557f` | Shrug (Dumbbell) | Dumbbell Shrug · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
 | `hevy-026fd047` | Side Bend (Dumbbell) | Dumbbell Side Bend · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
-| `side-lying-external-rotation` | Side-Lying External Rotation (Dumbbell) | External Rotation · yuhonas/free-exercise-db | Public domain (Unlicense) · high |
+| `side-lying-external-rotation` | Side-Lying External Rotation (Dumbbell) | External Rotation · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
+| `side-lying-hip-abduction` | Side-Lying Hip Abduction | AI-generated anatomical illustration · Form Coach AI (gpt-image-2) | Generated artwork · verifier-gated + human-reviewed · ai-verified |
 | `single-leg-balance` | Single-Leg Balance (hold) | Original movement diagram · Form Coach original | Original artwork · reviewed-original |
 | `hevy-9237ba12` | Sit Up (Weighted) | Sit-Up · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |
 | `skull-crusher` | Skull crusher (dumbbell) | Lying Dumbbell Tricep Extension · yuhonas/free-exercise-db | Public domain (Unlicense) · verified-existing |

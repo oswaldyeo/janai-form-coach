@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-08-02T15:28:00.288Z",
+  "generatedAt": "2026-08-19T02:00:13.824Z",
   "model": "gpt-image-2",
   "provider": "openai",
-  "totalEntries": 8,
-  "complete": 8,
+  "totalEntries": 13,
+  "complete": 13,
   "exercises": [
     {
       "id": "hevy-99d5f10e",
@@ -232,6 +232,156 @@
       "attempts": {
         "start": 1,
         "finish": 1
+      },
+      "complete": true,
+      "priorVisual": "none",
+      "specSource": "cached",
+      "provenance": {
+        "generator": "gpt-image-2",
+        "size": "1024x1024",
+        "quality": "high",
+        "styleRefs": [
+          "0.jpg"
+        ],
+        "formSpec": "claude sonnet physiologist pre-pass (state/form-specs/<id>.json)",
+        "verifier": "claude sonnet (strict physiologist gate, spec-anchored)"
+      }
+    },
+    {
+      "id": "scapular-depression",
+      "name": "Scapular Depression",
+      "equipment": "none",
+      "frames": [
+        "assets/howto/ai/scapular-depression/0.jpg",
+        "assets/howto/ai/scapular-depression/1.jpg"
+      ],
+      "verdicts": {
+        "start": "PASS",
+        "finish": "PASS"
+      },
+      "attempts": {
+        "start": 3,
+        "finish": 2
+      },
+      "complete": true,
+      "priorVisual": "none",
+      "specSource": "cached",
+      "provenance": {
+        "generator": "gpt-image-2",
+        "size": "1024x1024",
+        "quality": "high",
+        "styleRefs": [
+          "0.jpg"
+        ],
+        "formSpec": "claude sonnet physiologist pre-pass (state/form-specs/<id>.json)",
+        "verifier": "claude sonnet (strict physiologist gate, spec-anchored)"
+      }
+    },
+    {
+      "id": "side-lying-hip-abduction",
+      "name": "Side-Lying Hip Abduction",
+      "equipment": "none",
+      "frames": [
+        "assets/howto/ai/side-lying-hip-abduction/0.jpg",
+        "assets/howto/ai/side-lying-hip-abduction/1.jpg"
+      ],
+      "verdicts": {
+        "start": "PASS",
+        "finish": "PASS"
+      },
+      "attempts": {
+        "start": 2,
+        "finish": 2
+      },
+      "complete": true,
+      "priorVisual": "none",
+      "specSource": "cached",
+      "provenance": {
+        "generator": "gpt-image-2",
+        "size": "1024x1024",
+        "quality": "high",
+        "styleRefs": [
+          "0.jpg"
+        ],
+        "formSpec": "claude sonnet physiologist pre-pass (state/form-specs/<id>.json)",
+        "verifier": "claude sonnet (strict physiologist gate, spec-anchored)"
+      }
+    },
+    {
+      "id": "hamstring-stretch-supine",
+      "name": "Hamstring Stretch (Supine, Straightening Leg)",
+      "equipment": "none",
+      "frames": [
+        "assets/howto/ai/hamstring-stretch-supine/0.jpg",
+        "assets/howto/ai/hamstring-stretch-supine/1.jpg"
+      ],
+      "verdicts": {
+        "start": "PASS",
+        "finish": "PASS"
+      },
+      "attempts": {
+        "start": 4,
+        "finish": 1
+      },
+      "complete": true,
+      "priorVisual": "none",
+      "specSource": "cached",
+      "provenance": {
+        "generator": "gpt-image-2",
+        "size": "1024x1024",
+        "quality": "high",
+        "styleRefs": [
+          "0.jpg"
+        ],
+        "formSpec": "claude sonnet physiologist pre-pass (state/form-specs/<id>.json)",
+        "verifier": "claude sonnet (strict physiologist gate, spec-anchored)"
+      }
+    },
+    {
+      "id": "hevy-da5430fc",
+      "name": "Hip Thrust (Dumbbell)",
+      "equipment": "dumbbell",
+      "frames": [
+        "assets/howto/ai/hevy-da5430fc/0.jpg",
+        "assets/howto/ai/hevy-da5430fc/1.jpg"
+      ],
+      "verdicts": {
+        "start": "PASS",
+        "finish": "PASS"
+      },
+      "attempts": {
+        "start": 2,
+        "finish": 1
+      },
+      "complete": true,
+      "priorVisual": "none",
+      "specSource": "claude",
+      "provenance": {
+        "generator": "gpt-image-2",
+        "size": "1024x1024",
+        "quality": "high",
+        "styleRefs": [
+          "0.jpg"
+        ],
+        "formSpec": "claude sonnet physiologist pre-pass (state/form-specs/<id>.json)",
+        "verifier": "claude sonnet (strict physiologist gate, spec-anchored)"
+      }
+    },
+    {
+      "id": "hevy-c469ea70",
+      "name": "Hip Abduction (Cable)",
+      "equipment": "machine",
+      "frames": [
+        "assets/howto/ai/hevy-c469ea70/0.jpg",
+        "assets/howto/ai/hevy-c469ea70/1.jpg"
+      ],
+      "verdicts": {
+        "start": "PASS",
+        "finish": "PASS"
+      },
+      "attempts": {
+        "start": 2,
+        "finish": 2
       },
       "complete": true,
       "priorVisual": "none",
