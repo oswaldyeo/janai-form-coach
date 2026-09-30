@@ -129,11 +129,30 @@ js/app.js                          orchestration: screens, workout loop, camera 
     ├── exercises.js               biomechanics: measure() + progressFrom() + coach()
     ├── calibration.js             observed-ROM → personalised rest/peak angles
     ├── catalog.js                 exercise taxonomy (data) + camera capability blocks
-    ├── workout.js                 Workout/Set model, volume, PR, 1RM, progression, cadence
+    ├── workout.js                 Workout/Set model, volume, PR, 1RM, progression, cadence, per-exercise history series
+    ├── chart.js                   dependency-free SVG line-chart geometry + renderer (pure strings)
     ├── migration.js               v1 history → v2 workouts (idempotent, lossless)
     ├── routines.js                routine templates + built-in presets (Occam, rehab)
     └── session.js                 SessionRecorder + v1 & v2 export schemas
 ```
+
+### Per-exercise progress (Strong-style)
+
+Tap any exercise — from a **📈 Progress** button on a picker row, or its name in a
+History card — to open a detail screen with all-time PR tiles (max weight, est
+1RM, best-set volume), a metric toggle (**Max weight / Est 1RM / Volume**), a
+progress **chart**, and the full per-session history.
+
+`exerciseHistorySeries(history, exerciseId, {bodyweightKg})` (in `workout.js`) is
+the pure data source: one point per session, **oldest-first**, each carrying the
+heaviest set (ties broken by reps), best e1RM, volume, reps and set count.
+Multiple instances of the same lift in one session merge into one point;
+sessions with no completed sets are skipped. `chart.js` turns a plain number
+array into an SVG string — `chartGeometry()` does the scaling math (min→bottom,
+max→top, flat series → centred line, single point → centred) and `lineChartSVG()`
+assembles the markup. **No charting library** — the app keeps its zero-runtime-
+dependency rule. Both layers are unit-tested (`test/chart.test.js`,
+`exerciseHistorySeries` cases in `test/workout.test.js`).
 
 ### The camera coach as a per-set sub-mode
 

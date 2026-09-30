@@ -19,8 +19,9 @@ import {
   makeWorkout, addExercise, removeExercise, reorderExercise, addSet, removeSet, reorderSet, updateSet,
   workoutVolume, completedSetCount, totalReps, workoutDurationSec,
   summarize, newPRsInWorkout, previousSets, seedSetsFromHistory, pruneIncompleteSets,
-  nextLoadSuggestion, cadenceScore, SET_TYPES,
+  nextLoadSuggestion, cadenceScore, SET_TYPES, exercisePRs, exerciseHistorySeries, epley1RM,
 } from './engine/workout.js';
+import { lineChartSVG } from './engine/chart.js';
 import { adjacentTab } from './engine/gestures.js';
 import { attachRipple, attachSwipeNav, dragSession, clearSwipeArtifacts } from './interactions.js';
 import {
@@ -162,7 +163,7 @@ function showScreen(id) {
   // screen and clip its right edge.
   clearSwipeArtifacts();
   state.screen = id || null;
-  ['screen-workout', 'screen-picker', 'screen-summary'].forEach((s) => show($(s), s === id));
+  ['screen-workout', 'screen-picker', 'screen-summary', 'screen-exercise'].forEach((s) => show($(s), s === id));
   const onScreen = !!id;
   show($('main'), true);
   ['tab-home', 'tab-routines', 'tab-history'].forEach((t) => {
@@ -176,6 +177,7 @@ function showScreen(id) {
 
 function goBack() {
   if (state.screen === 'screen-picker') return closePicker();
+  if (state.screen === 'screen-exercise') return closeExerciseDetail();
   if (state.screen === 'screen-workout') {
     persistActive();
     showScreen(null);
@@ -332,16 +334,28 @@ function renderHistory() {
     const dur = workoutDurationSec(w);
     const prs = newPRsInWorkout(w, state.history.slice(i + 1));
     const prBadge = prs.length ? `<span class="badge pr">★ ${prs.length} PR</span>` : '';
-    const lifts = w.exercises.map((e) => catalogName(e.exerciseId)).join(' · ');
+    // Each exercise name is a tap target → its Strong-style progress screen.
+    const lifts = w.exercises
+      .map((e) => `<button class="lift-link" data-exdetail="${esc(e.exerciseId)}">${esc(catalogName(e.exerciseId))}</button>`)
+      .join('<span class="muted"> · </span>');
     return `<div class="wcard">
       <div class="head-row"><b>${esc(w.title)}</b><span class="muted">${fmtDate(w.startedAtMs)}</span></div>
-      <div class="muted tiny" style="margin:4px 0">${esc(lifts)}</div>
+      <div class="tiny" style="margin:4px 0">${lifts}</div>
       <div class="wstats">
         <span>${completedSetCount(w)} sets</span><span>${totalReps(w)} reps</span>
         <span>${fmtVol(v)}</span><span>${fmtDur(dur)}</span>${prBadge}
       </div>
     </div>`;
   }).join('');
+  list.querySelectorAll('[data-exdetail]').forEach((b) =>
+    b.addEventListener('click', () => openExerciseDetail(b.dataset.exdetail)));
+}
+
+// Set of exercise ids that appear anywhere in logged history (for "Progress" affordances).
+function loggedExerciseIds() {
+  const ids = new Set();
+  for (const w of state.history) for (const e of w.exercises || []) ids.add(e.exerciseId);
+  return ids;
 }
 
 function statTile(label, val) {
@@ -691,6 +705,7 @@ function renderPicker() {
   const results = searchCatalog({ query: q, muscle: state.picker.filterMuscle, equipment: state.picker.filterEquipment });
   const host = $('picker-list');
   $('picker-count').textContent = `${results.length} exercise${results.length === 1 ? '' : 's'}`;
+  const logged = loggedExerciseIds();
   host.innerHTML = results.map((e) => {
     const badge = hasCamera(e)
       ? `<span class="badge cam ${confClass(e)}">📷 Coach</span>`
@@ -698,16 +713,22 @@ function renderPicker() {
     const howto = getHowto(e.id)
       ? `<button class="ghost small pick-howto" data-howto="${esc(e.id)}">ℹ️ How to</button>`
       : '';
+    // Progress button only when there's logged history to chart.
+    const progress = logged.has(e.id)
+      ? `<button class="ghost small pick-progress" data-exdetail="${esc(e.id)}">📈 Progress</button>`
+      : '';
     return `<div class="pick-row">
       <button class="pick-main" data-pick="${e.id}">
         <span><b>${esc(e.name)}</b><span class="pick-meta">${esc(humanize(e.primaryMuscle))} · ${esc(humanize(e.equipment))}</span></span>
         ${badge}
       </button>
+      ${progress}
       ${howto}
     </div>`;
   }).join('') || pickerEmptyState(q);
   host.querySelectorAll('[data-pick]').forEach((b) => b.addEventListener('click', () => pickExercise(b.dataset.pick)));
   host.querySelectorAll('[data-howto]').forEach((b) => b.addEventListener('click', () => openHowto(b.dataset.howto)));
+  host.querySelectorAll('[data-exdetail]').forEach((b) => b.addEventListener('click', () => openExerciseDetail(b.dataset.exdetail)));
   const clear = $('picker-clear');
   if (clear) clear.addEventListener('click', () => {
     $('picker-search').value = '';
@@ -775,6 +796,88 @@ function pickExercise(id) {
 function closePicker() {
   if (state.workout) showScreen('screen-workout');
   else showScreen(null);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// EXERCISE DETAIL — Strong-style per-exercise progress (PRs + chart + history)
+// ════════════════════════════════════════════════════════════════════════════
+// Three chartable metrics. `pick` pulls the plotted number out of one series
+// point; a null means "no data this session" and the chart drops it.
+const EXDETAIL_METRICS = [
+  { key: 'weight', label: 'Max weight', pick: (p) => p.topSetWeight, fmt: (v) => fmtWeight(v) },
+  { key: 'e1rm', label: 'Est 1RM', pick: (p) => (p.best1RM == null ? null : round1(p.best1RM)), fmt: (v) => fmtWeight(v) },
+  { key: 'volume', label: 'Volume', pick: (p) => p.volume, fmt: (v) => fmtVol(v) },
+];
+
+function openExerciseDetail(exerciseId) {
+  // Remember where we came from so Back returns there (picker, history tab, …).
+  state.exdetail = { exerciseId, metric: (state.exdetail && state.exdetail.metric) || 'weight', from: state.screen || `tab:${state.tab}` };
+  showScreen('screen-exercise');
+  renderExerciseDetail();
+}
+
+function closeExerciseDetail() {
+  const from = state.exdetail && state.exdetail.from;
+  if (from === 'screen-picker') return showScreen('screen-picker');
+  showScreen(null); // back to whichever tab was active (history, usually)
+}
+
+function renderExerciseDetail() {
+  const { exerciseId, metric } = state.exdetail;
+  const cat = getCatalogEntry(exerciseId);
+  const bw = state.settings.bodyweightKg;
+  $('exdetail-name').textContent = cat ? cat.name : exerciseId;
+  $('exdetail-meta').textContent = cat ? `${humanize(cat.primaryMuscle)} · ${humanize(cat.equipment)}` : '';
+
+  const series = exerciseHistorySeries(state.history, exerciseId, { bodyweightKg: bw });
+  const prs = exercisePRs(state.history, exerciseId);
+
+  // PR tiles. exercisePRs is null for a never-weighted exercise; fall back to
+  // the series so bodyweight movements still show sessions/volume.
+  const tiles = [];
+  if (prs) {
+    tiles.push(statTile('Max weight', fmtWeight(prs.maxWeight)));
+    tiles.push(statTile('Est 1RM', fmtWeight(round1(prs.best1RM))));
+    tiles.push(statTile('Best set vol', fmtVol(prs.maxVolume)));
+  }
+  tiles.push(statTile('Sessions', series.length));
+  $('exdetail-prs').innerHTML = tiles.join('');
+
+  // Metric toggle
+  $('exdetail-metric').innerHTML = EXDETAIL_METRICS.map((m) =>
+    `<button class="chip ${m.key === metric ? 'on' : ''}" data-metric="${m.key}">${m.label}</button>`
+  ).join('');
+  $('exdetail-metric').querySelectorAll('[data-metric]').forEach((b) =>
+    b.addEventListener('click', () => { state.exdetail.metric = b.dataset.metric; renderExerciseDetail(); }));
+
+  // Chart of the selected metric
+  const m = EXDETAIL_METRICS.find((x) => x.key === metric) || EXDETAIL_METRICS[0];
+  const values = series.map(m.pick);
+  $('exdetail-chart').innerHTML = lineChartSVG(values, {
+    fmt: m.fmt,
+    ariaLabel: `${m.label} over ${series.length} session${series.length === 1 ? '' : 's'}`,
+  });
+
+  // Per-session history, newest first (mirrors the History tab ordering)
+  const host = $('exdetail-sessions');
+  if (!series.length) {
+    host.innerHTML = `<div class="empty-state">
+      <div class="empty-icon" aria-hidden="true">📈</div>
+      <b>No sessions yet</b>
+      <span>Log this exercise and its progress charts here.</span>
+    </div>`;
+    return;
+  }
+  host.innerHTML = series.slice().reverse().map((p) => {
+    const best = p.bestSet ? `${fmtWeight(p.bestSet.weight)} × ${p.bestSet.reps}` : `${p.reps} reps`;
+    const e1rm = p.best1RM != null ? `<span>e1RM ${fmtWeight(round1(p.best1RM))}</span>` : '';
+    return `<div class="wcard">
+      <div class="head-row"><b>${esc(best)}</b><span class="muted">${fmtDate(p.startedAtMs)}</span></div>
+      <div class="wstats">
+        <span>${p.sets} sets</span><span>${p.reps} reps</span><span>${fmtVol(p.volume)}</span>${e1rm}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ════════════════════════════════════════════════════════════════════════════

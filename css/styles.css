@@ -522,3 +522,20 @@ button.small { min-height: 40px; padding: 8px 12px; font-size: 13px; border-radi
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+
+/* ── Exercise detail: progress chart + tap-through links ─────────────────── */
+.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart-line { stroke: var(--mint); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart-area { fill: var(--mint); opacity: .12; }
+.chart-dot { fill: var(--mint); }
+.chart-dot.last { fill: var(--mint-ink); stroke: var(--mint); stroke-width: 2; }
+.chart-tick { fill: var(--muted); font-size: 10px; font-weight: 700; }
+.chart-empty { fill: var(--muted); font-size: 13px; }
+/* Exercise names in history cards read as inline tap targets, not buttons. */
+.lift-link {
+  display: inline; padding: 0; background: none; border: 0; font: inherit;
+  color: var(--muted-2); font-size: 12px; font-weight: 700; cursor: pointer;
+  border-bottom: 1px dashed var(--line);
+}
+.lift-link:active { color: var(--mint); }
+.pick-progress { white-space: nowrap; }

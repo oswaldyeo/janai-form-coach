@@ -207,6 +207,73 @@ export function newPRsInWorkout(candidate, priorHistory) {
 }
 
 /**
+ * Per-exercise progress time-series across history — the data behind a
+ * Strong-style "max weight over time" chart. One point per workout that
+ * contains the exercise (a workout may hold the exercise more than once — e.g.
+ * a superset repeat — and those instances are merged into a single session
+ * point). Considers completed sets only.
+ *
+ * Each point: {
+ *   workoutId, startedAtMs, title,
+ *   topSetWeight,   // heaviest completed weighted set that session
+ *   best1RM,        // best Epley estimate that session
+ *   volume,         // session volume for this exercise (weighted; bodyweight folds in if supplied)
+ *   reps,           // total completed reps this session
+ *   sets,           // completed set count this session
+ *   bestSet         // {weight, reps} of the heaviest set (ties → more reps), or null if bodyweight-only
+ * }
+ *
+ * Returned OLDEST-FIRST (charts read left→right in time), regardless of the
+ * newest-first storage order. Sessions with no completed sets are skipped.
+ * Pure.
+ */
+export function exerciseHistorySeries(historyWorkouts, exerciseId, { bodyweightKg = null } = {}) {
+  const points = [];
+  for (const w of historyWorkouts || []) {
+    const insts = (w.exercises || []).filter((e) => e.exerciseId === exerciseId);
+    if (!insts.length) continue;
+
+    let volume = 0;
+    let reps = 0;
+    let sets = 0;
+    let best1RM = null;
+    let bestSet = null; // heaviest weighted set; ties broken by more reps
+    for (const ex of insts) {
+      for (const s of ex.sets || []) {
+        if (!s.completed) continue;
+        sets += 1;
+        reps += s.reps || 0;
+        volume += setVolume(s, { bodyweightKg });
+        if (s.weight == null) continue;
+        const orm = epley1RM(s.weight, s.reps);
+        if (best1RM == null || orm > best1RM) best1RM = orm;
+        const better = bestSet == null
+          || s.weight > bestSet.weight
+          || (s.weight === bestSet.weight && (s.reps || 0) > (bestSet.reps || 0));
+        if (better) bestSet = { weight: s.weight, reps: s.reps || 0 };
+      }
+    }
+    if (sets === 0) continue; // no completed work this session
+
+    points.push({
+      workoutId: w.id,
+      startedAtMs: w.startedAtMs ?? null,
+      title: w.title || 'Workout',
+      topSetWeight: bestSet ? bestSet.weight : null,
+      best1RM,
+      volume: round2(volume),
+      reps,
+      sets,
+      bestSet,
+    });
+  }
+  // Storage is newest-first; charts want oldest→newest along the x-axis. Nulls
+  // (missing timestamps) sort to the front so they don't jump the newest bar.
+  points.sort((a, b) => (a.startedAtMs || 0) - (b.startedAtMs || 0));
+  return points;
+}
+
+/**
  * Completed sets from the most recent workout containing the exercise
  * (newest-first assumed). Powers the per-row "previous" placeholders: row i of
  * today's exercise mirrors set i of the last session, Hevy-style.
