@@ -824,6 +824,9 @@ function openExerciseDetail(exerciseId) {
 function closeExerciseDetail() {
   const from = state.exdetail && state.exdetail.from;
   if (from === 'screen-picker') return showScreen('screen-picker');
+  // Opened from the active workout's 📈 button: return to the workout, not
+  // Home — the session is still live and losing the screen reads as data loss.
+  if (from === 'screen-workout' && state.workout) return showScreen('screen-workout');
   showScreen(null); // back to whichever tab was active (history, usually)
 }
 
