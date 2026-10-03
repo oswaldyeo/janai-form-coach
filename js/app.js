@@ -30,11 +30,13 @@ import {
 import { generateWOD } from './engine/wod.js?v=24';
 import { createPoseLandmarker } from './pose.js';
 import {
-  loadWorkouts, saveWorkout, clearWorkouts, loadRoutines, saveRoutine, deleteRoutine,
+  loadWorkouts, saveWorkouts, saveWorkout, clearWorkouts, loadRoutines, saveRoutine, deleteRoutine,
   loadSettings, saveSettings, loadCalibration, saveCalibration, ensureMigrated,
   loadActiveWorkout, saveActiveWorkout, clearActiveWorkout,
   queueForDelivery, markDelivered, pendingWorkouts, loadOutbox,
+  loadHistory,
 } from './storage.js';
+import { exportBundle, parseBundle, mergeWorkouts } from './engine/backup.js';
 
 const $ = (id) => document.getElementById(id);
 const now = () => Date.now();
@@ -1258,6 +1260,45 @@ function wireSettings() {
   });
   $('set-autorest').addEventListener('change', (e) => {
     state.settings = saveSettings({ autoStartRest: e.target.checked });
+  });
+  $('btn-export-data').addEventListener('click', () => {
+    const bundle = exportBundle({
+      workouts: loadWorkouts(), historyV1: loadHistory(),
+      routines: loadRoutines(), settings: loadSettings(),
+    }, now());
+    const blob = new Blob([JSON.stringify(bundle, null, 1)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `formcoach-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  });
+  $('btn-import-data').addEventListener('click', () => $('import-file').click());
+  $('import-file').addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = ''; // allow re-picking the same file
+    if (!file) return;
+    try {
+      const parsed = parseBundle(await file.text());
+      const { workouts, added, skipped } = mergeWorkouts(loadWorkouts(), parsed.workouts);
+      if (added) saveWorkouts(workouts);
+      let routinesAdded = 0;
+      if (parsed.routines.length) {
+        const haveR = new Set(loadRoutines().map((r) => r.id));
+        for (const r of parsed.routines) {
+          if (r && typeof r.id === 'string' && !haveR.has(r.id)) { saveRoutine(r); routinesAdded += 1; }
+        }
+      }
+      state.history = loadWorkouts();
+      state.routines = loadRoutines();
+      refreshAll();
+      const bits = [`${added} workout${added === 1 ? '' : 's'} added`, `${skipped} already here`];
+      if (parsed.dropped) bits.push(`${parsed.dropped} unreadable`);
+      if (routinesAdded) bits.push(`${routinesAdded} routines`);
+      alert(`Import done: ${bits.join(', ')}.`);
+    } catch (err) {
+      alert(`Import failed: ${err.message}`);
+    }
   });
   $('btn-reset-data').addEventListener('click', () => {
     if (confirm('Clear all v2 workout history? (v1 history is kept.)')) {

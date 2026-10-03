@@ -265,6 +265,12 @@
         <label for="set-autorest">Auto-start rest timer on set complete</label>
         <input type="checkbox" id="set-autorest" checked />
       </div>
+      <div class="set-field" style="margin-top:14px">
+        <label>Data</label>
+        <button class="ghost wide" id="btn-export-data">Export backup (JSON)</button>
+        <button class="ghost wide" id="btn-import-data" style="margin-top:8px">Import backup / Hevy file</button>
+        <input type="file" id="import-file" accept=".json,application/json" hidden />
+      </div>
       <button class="ghost danger wide" id="btn-reset-data" style="margin-top:14px">Clear all v2 history</button>
     </div>
   </section>
