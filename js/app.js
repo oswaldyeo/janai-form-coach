@@ -492,6 +492,7 @@ function exerciseCard(ex, ei) {
     ${rows}
     <div class="ex-actions">
       <button class="ghost small" data-addset="${ei}">+ Add set</button>
+      <button class="ghost small" data-exdetail="${esc(ex.exerciseId)}">📈 Progress</button>
       ${howtoBtn}
       ${coachBtn}
     </div>
@@ -587,6 +588,7 @@ function wireWorkoutEvents(host) {
     if (nowDone) host.querySelector(`[data-done="${ei}:${si}"]`)?.classList.add('pop');
     if (nowDone && state.settings.autoStartRest) startRest(ei);
   }));
+  host.querySelectorAll('[data-exdetail]').forEach((el) => el.addEventListener('click', () => openExerciseDetail(el.dataset.exdetail)));
   host.querySelectorAll('[data-addset]').forEach((el) => el.addEventListener('click', () => {
     const ei = Number(el.dataset.addset);
     const last = state.workout.exercises[ei].sets.slice(-1)[0];
