@@ -268,12 +268,9 @@
       <div class="set-field" style="margin-top:14px">
         <label>Account &amp; cloud sync</label>
         <div id="cloud-signedout">
-          <input id="cloud-email" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" />
-          <button class="ghost wide" id="btn-cloud-sendcode" style="margin-top:8px">Email me a sign-in code</button>
-          <div id="cloud-codewrap" hidden>
-            <input id="cloud-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" style="margin-top:8px" />
-            <button class="ghost wide" id="btn-cloud-verify" style="margin-top:8px">Verify &amp; sign in</button>
-          </div>
+          <input id="cloud-email" type="email" inputmode="email" autocomplete="username" placeholder="you@email.com" />
+          <input id="cloud-password" type="password" autocomplete="current-password" placeholder="password" style="margin-top:8px" />
+          <button class="ghost wide" id="btn-cloud-signin" style="margin-top:8px">Sign in &amp; sync</button>
         </div>
         <div id="cloud-signedin" hidden>
           <div class="muted" id="cloud-status"></div>

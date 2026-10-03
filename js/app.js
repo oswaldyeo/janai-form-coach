@@ -37,7 +37,7 @@ import {
   loadHistory, loadCloudSession, saveCloudSession, clearCloudSession,
 } from './storage.js';
 import { exportBundle, parseBundle, mergeWorkouts } from './engine/backup.js';
-import { requestOtp, verifyOtp, refreshSession, pullWorkouts, pushWorkouts, sessionNeedsRefresh } from './engine/cloud.js';
+import { signInWithPassword, refreshSession, pullWorkouts, pushWorkouts, sessionNeedsRefresh } from './engine/cloud.js';
 
 const $ = (id) => document.getElementById(id);
 const now = () => Date.now();
@@ -1293,24 +1293,16 @@ async function cloudSync(reason = 'manual') {
 }
 
 function wireCloud() {
-  $('btn-cloud-sendcode').addEventListener('click', async () => {
+  $('btn-cloud-signin').addEventListener('click', async () => {
     const email = $('cloud-email').value.trim();
+    const password = $('cloud-password').value;
     if (!email || !email.includes('@')) { cloudMsg('Enter your email first.'); return; }
-    cloudMsg('Sending…');
+    if (!password) { cloudMsg('Enter your password.'); return; }
+    cloudMsg('Signing in…');
     try {
-      await requestOtp(email);
-      $('cloud-codewrap').hidden = false;
-      cloudMsg('Check your email for the 6-digit code (or tap its link, then come back and sync).');
-    } catch (err) { cloudMsg(`Could not send: ${err.message}`); }
-  });
-  $('btn-cloud-verify').addEventListener('click', async () => {
-    const email = $('cloud-email').value.trim();
-    const code = $('cloud-code').value.trim();
-    if (!code) { cloudMsg('Enter the code from the email.'); return; }
-    cloudMsg('Verifying…');
-    try {
-      const session = await verifyOtp(email, code);
+      const session = await signInWithPassword(email, password);
       saveCloudSession(session);
+      $('cloud-password').value = '';
       renderCloudSection();
       cloudMsg('Signed in — syncing…');
       await cloudSync('manual');

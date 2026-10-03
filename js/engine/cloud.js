@@ -81,6 +81,14 @@ export async function verifyOtp(email, token) {
   return session;
 }
 
+/** Email + password sign-in (1Password-friendly). */
+export async function signInWithPassword(email, password) {
+  const body = await call('/auth/v1/token?grant_type=password', { method: 'POST', body: { email, password } });
+  const session = sessionFromTokenResponse(body);
+  if (!session) throw new Error('Sign-in failed.');
+  return session;
+}
+
 /** Trade a refresh token for a fresh session. */
 export async function refreshSession(refresh_token) {
   const body = await call('/auth/v1/token?grant_type=refresh_token', { method: 'POST', body: { refresh_token } });
