@@ -34,9 +34,10 @@ import {
   loadSettings, saveSettings, loadCalibration, saveCalibration, ensureMigrated,
   loadActiveWorkout, saveActiveWorkout, clearActiveWorkout,
   queueForDelivery, markDelivered, pendingWorkouts, loadOutbox,
-  loadHistory,
+  loadHistory, loadCloudSession, saveCloudSession, clearCloudSession,
 } from './storage.js';
 import { exportBundle, parseBundle, mergeWorkouts } from './engine/backup.js';
+import { requestOtp, verifyOtp, refreshSession, pullWorkouts, pushWorkouts, sessionNeedsRefresh } from './engine/cloud.js';
 
 const $ = (id) => document.getElementById(id);
 const now = () => Date.now();
@@ -935,6 +936,7 @@ function finishWorkout() {
   const prs = newPRsInWorkout(finished, state.history);
   if (!saveWorkout(finished)) alert('Could not save the workout — storage is unavailable. Export before closing.');
   queueForDelivery(finished);      // remember to hand it to Janai Health
+  cloudSync('auto');               // fire-and-forget; offline just skips
   discardActive();
   state.history = loadWorkouts();
   refreshPendingBanner();
@@ -1236,12 +1238,100 @@ function setCue(text, tone = 'good', speak = false) {
 // ════════════════════════════════════════════════════════════════════════════
 // SETTINGS
 // ════════════════════════════════════════════════════════════════════════════
+// ── cloud sync ───────────────────────────────────────────────────────────────
+
+let cloudBusy = false;
+
+function cloudMsg(text) {
+  const el = $('cloud-msg');
+  if (el) el.textContent = text || '';
+}
+
+function renderCloudSection() {
+  const session = loadCloudSession();
+  const sOut = $('cloud-signedout'); const sIn = $('cloud-signedin');
+  if (!sOut || !sIn) return;
+  sOut.hidden = !!session;
+  sIn.hidden = !session;
+  if (session) {
+    const when = session.lastSyncMs ? new Date(session.lastSyncMs).toLocaleString() : 'never';
+    $('cloud-status').textContent = `Signed in as ${session.user?.email || '?'} · Last sync: ${when}`;
+  }
+}
+
+/** Pull→merge→push. Local store always wins on conflicts (merge dedupes by id). */
+async function cloudSync(reason = 'manual') {
+  let session = loadCloudSession();
+  if (!session || cloudBusy) return;
+  cloudBusy = true;
+  if (reason === 'manual') cloudMsg('Syncing…');
+  try {
+    if (sessionNeedsRefresh(session, now())) {
+      session = { ...session, ...(await refreshSession(session.refresh_token)) };
+      saveCloudSession(session);
+    }
+    const cloud = await pullWorkouts(session);
+    const local = loadWorkouts();
+    const { workouts, added } = mergeWorkouts(local, cloud);
+    if (added) { saveWorkouts(workouts); state.history = loadWorkouts(); refreshAll(); }
+    await pushWorkouts(session, workouts.length ? workouts : local);
+    saveCloudSession({ ...session, lastSyncMs: now() });
+    renderCloudSection();
+    if (reason === 'manual') cloudMsg(`Synced — ${added ? `${added} pulled from cloud, ` : ''}all workouts backed up.`);
+  } catch (err) {
+    // Expired refresh tokens mean a dead session; anything else is transient.
+    if (/refresh|invalid|expired|revoked/i.test(err.message) && /token|grant|session/i.test(err.message)) {
+      clearCloudSession();
+      renderCloudSection();
+      cloudMsg('Session expired — sign in again.');
+    } else if (reason === 'manual') {
+      cloudMsg(`Sync failed: ${err.message}`);
+    }
+  } finally {
+    cloudBusy = false;
+  }
+}
+
+function wireCloud() {
+  $('btn-cloud-sendcode').addEventListener('click', async () => {
+    const email = $('cloud-email').value.trim();
+    if (!email || !email.includes('@')) { cloudMsg('Enter your email first.'); return; }
+    cloudMsg('Sending…');
+    try {
+      await requestOtp(email);
+      $('cloud-codewrap').hidden = false;
+      cloudMsg('Check your email for the 6-digit code (or tap its link, then come back and sync).');
+    } catch (err) { cloudMsg(`Could not send: ${err.message}`); }
+  });
+  $('btn-cloud-verify').addEventListener('click', async () => {
+    const email = $('cloud-email').value.trim();
+    const code = $('cloud-code').value.trim();
+    if (!code) { cloudMsg('Enter the code from the email.'); return; }
+    cloudMsg('Verifying…');
+    try {
+      const session = await verifyOtp(email, code);
+      saveCloudSession(session);
+      renderCloudSection();
+      cloudMsg('Signed in — syncing…');
+      await cloudSync('manual');
+    } catch (err) { cloudMsg(`Sign-in failed: ${err.message}`); }
+  });
+  $('btn-cloud-sync').addEventListener('click', () => cloudSync('manual'));
+  $('btn-cloud-signout').addEventListener('click', () => {
+    clearCloudSession();
+    renderCloudSection();
+    cloudMsg('Signed out. Your data stays on this device.');
+  });
+}
+
 function openSettings() {
   const s = state.settings;
   $('seg-units').querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.unit === s.units));
   $('set-bodyweight').value = s.bodyweightKg ?? '';
   $('set-rest').value = s.defaultRestSec;
   $('set-autorest').checked = !!s.autoStartRest;
+  renderCloudSection();
+  cloudMsg('');
   show($('screen-settings'), true);
 }
 function closeSettings() { show($('screen-settings'), false); }
@@ -1475,6 +1565,7 @@ function wireEvents() {
   $('btn-settings').addEventListener('click', openSettings);
   $('btn-settings-close').addEventListener('click', closeSettings);
   wireSettings();
+  wireCloud();
 
   const inst = $('btn-install');
   if (inst) inst.addEventListener('click', async () => {
@@ -1593,6 +1684,9 @@ function boot() {
 
   // preload the pose model in the background; failure is non-fatal
   initPose();
+
+  // signed in? pull/push in the background — offline or signed-out is a no-op
+  cloudSync('boot');
 
   window.__formCoachReady = true;
   document.body.dataset.ready = 'true';

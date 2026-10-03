@@ -19,6 +19,9 @@ const MIGRATION_KEY = 'janai.formcoach.migration';
 // Persisted so a failed/cancelled/offline share is never lost — retry re-shares
 // everything still pending, and the receiver dedupes by workout id.
 const OUTBOX_KEY = 'janai.formcoach.outbox.v1';
+// Cloud auth session (Supabase GoTrue tokens). Workouts themselves are never
+// stored here — only the signed-in identity that scopes cloud sync.
+const CLOUD_SESSION_KEY = 'janai.formcoach.cloud.v1';
 
 const HISTORY_LIMIT = 200;
 const WORKOUT_LIMIT = 300;
@@ -205,4 +208,19 @@ export function ensureMigrated(now = Date.now) {
 /** Debug: clear the guard so the migration can be re-run against history.v1. */
 export function resetMigration() {
   return removeItem(MIGRATION_KEY);
+}
+
+// ── cloud session ────────────────────────────────────────────────────────────
+
+export function loadCloudSession() {
+  const s = safeParse(getItem(CLOUD_SESSION_KEY), null);
+  return s && typeof s === 'object' && s.access_token ? s : null;
+}
+
+export function saveCloudSession(session) {
+  return setItem(CLOUD_SESSION_KEY, JSON.stringify(session));
+}
+
+export function clearCloudSession() {
+  return removeItem(CLOUD_SESSION_KEY);
 }
