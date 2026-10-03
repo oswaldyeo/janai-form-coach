@@ -81,6 +81,15 @@ export async function verifyOtp(email, token) {
   return session;
 }
 
+/**
+ * Create an account with email + password. Returns a session when the project
+ * auto-confirms; otherwise null (account exists but needs activation first).
+ */
+export async function signUp(email, password) {
+  const body = await call('/auth/v1/signup', { method: 'POST', body: { email, password } });
+  return sessionFromTokenResponse(body); // null ⇒ confirmation pending
+}
+
 /** Email + password sign-in (1Password-friendly). */
 export async function signInWithPassword(email, password) {
   const body = await call('/auth/v1/token?grant_type=password', { method: 'POST', body: { email, password } });

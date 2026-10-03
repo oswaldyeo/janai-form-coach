@@ -37,7 +37,7 @@ import {
   loadHistory, loadCloudSession, saveCloudSession, clearCloudSession,
 } from './storage.js';
 import { exportBundle, parseBundle, mergeWorkouts } from './engine/backup.js';
-import { signInWithPassword, refreshSession, pullWorkouts, pushWorkouts, sessionNeedsRefresh } from './engine/cloud.js';
+import { signUp, signInWithPassword, refreshSession, pullWorkouts, pushWorkouts, sessionNeedsRefresh } from './engine/cloud.js';
 
 const $ = (id) => document.getElementById(id);
 const now = () => Date.now();
@@ -1307,6 +1307,26 @@ function wireCloud() {
       cloudMsg('Signed in — syncing…');
       await cloudSync('manual');
     } catch (err) { cloudMsg(`Sign-in failed: ${err.message}`); }
+  });
+  $('btn-cloud-create').addEventListener('click', async () => {
+    const email = $('cloud-email').value.trim();
+    const password = $('cloud-password').value;
+    if (!email || !email.includes('@')) { cloudMsg('Enter your email first.'); return; }
+    if (!password || password.length < 8) { cloudMsg('Pick a password (8+ characters).'); return; }
+    cloudMsg('Creating account…');
+    try {
+      const session = await signUp(email, password);
+      if (session) {
+        saveCloudSession(session);
+        $('cloud-password').value = '';
+        renderCloudSection();
+        cloudMsg('Account created — syncing…');
+        await cloudSync('manual');
+      } else {
+        // Confirmation-required project: the account exists but is inactive.
+        cloudMsg('Account created. It needs one-time activation — tell Janai and she will flip it on, then tap Sign in.');
+      }
+    } catch (err) { cloudMsg(`Could not create account: ${err.message}`); }
   });
   $('btn-cloud-sync').addEventListener('click', () => cloudSync('manual'));
   $('btn-cloud-signout').addEventListener('click', () => {
