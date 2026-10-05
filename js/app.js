@@ -18,7 +18,7 @@ import { buildDeliveryDocument, deliveryFilename } from './engine/delivery.js';
 import {
   makeWorkout, addExercise, removeExercise, reorderExercise, addSet, removeSet, reorderSet, updateSet,
   workoutVolume, completedSetCount, totalReps, workoutDurationSec,
-  summarize, newPRsInWorkout, previousSets, seedSetsFromHistory, pruneIncompleteSets,
+  summarize, newPRsInWorkout, previousSets, seedSetsFromHistory, seedWorkoutFromHistory, pruneIncompleteSets,
   nextLoadSuggestion, cadenceScore, SET_TYPES, exercisePRs, exerciseHistorySeries, epley1RM,
 } from './engine/workout.js';
 import { lineChartSVG } from './engine/chart.js';
@@ -378,7 +378,8 @@ function startEmptyWorkout() {
 }
 
 function startOccam(dayKey) {
-  state.workout = routineToWorkout(OCCAM_ROUTINE, dayKey, { id: newWorkoutId(), startedAtMs: now() });
+  const w = routineToWorkout(OCCAM_ROUTINE, dayKey, { id: newWorkoutId(), startedAtMs: now() });
+  state.workout = seedWorkoutFromHistory(w, state.history);
   openWorkout();
 }
 
@@ -386,7 +387,8 @@ function startRoutine(routineId, dayKey) {
   const routine = BUILTIN_ROUTINES.find((r) => r.id === routineId)
     || state.routines.find((r) => r.id === routineId);
   if (!routine) return;
-  state.workout = routineToWorkout(routine, dayKey, { id: newWorkoutId(), startedAtMs: now() });
+  const w = routineToWorkout(routine, dayKey, { id: newWorkoutId(), startedAtMs: now() });
+  state.workout = seedWorkoutFromHistory(w, state.history);
   openWorkout();
 }
 

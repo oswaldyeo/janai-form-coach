@@ -315,6 +315,22 @@ export function seedSetsFromHistory(historyWorkouts, exerciseId) {
 }
 
 /**
+ * Overlay a freshly-built workout (from a routine template) with each
+ * exercise's most recent logged sets: lifters expect today's defaults to be
+ * "what I did last time", not the template's canned numbers. Exercises with
+ * no history keep their template sets (the template IS the best guess on a
+ * first attempt). Pure.
+ */
+export function seedWorkoutFromHistory(workout, historyWorkouts) {
+  const exercises = (workout.exercises || []).map((ex) => {
+    const prev = previousSets(historyWorkouts, ex.exerciseId);
+    if (!prev.length) return ex;
+    return { ...ex, sets: seedSetsFromHistory(historyWorkouts, ex.exerciseId) };
+  });
+  return { ...workout, exercises };
+}
+
+/**
  * Drop uncompleted sets (and any exercise left with none) before saving a
  * finished workout, so history holds only what was actually performed. Pure.
  */
