@@ -37,7 +37,7 @@ import {
   loadHistory, loadCloudSession, saveCloudSession, clearCloudSession,
 } from './storage.js';
 import { exportBundle, parseBundle, mergeWorkouts } from './engine/backup.js';
-import { signUp, signInWithPassword, refreshSession, pullWorkouts, pushWorkouts, sessionNeedsRefresh } from './engine/cloud.js';
+import { signUp, signInWithPassword, refreshSession, pullWorkouts, pushWorkouts, sessionNeedsRefresh, mapAuthError } from './engine/cloud.js';
 
 const $ = (id) => document.getElementById(id);
 const now = () => Date.now();
@@ -1267,12 +1267,21 @@ function renderCloudSection() {
 /** Pull→merge→push. Local store always wins on conflicts (merge dedupes by id). */
 async function cloudSync(reason = 'manual') {
   let session = loadCloudSession();
-  if (!session || cloudBusy) return;
+  if (!session) return;
+  if (cloudBusy) { if (reason === 'manual') cloudMsg('Still syncing — hang on…'); return; }
+  // True while the session that started this sync is still the stored one —
+  // a mid-flight sign-out (or account switch) must not be resurrected by a
+  // late saveCloudSession below.
+  const sessionStillCurrent = () => {
+    const cur = loadCloudSession();
+    return !!cur && cur.user?.id === session.user?.id;
+  };
   cloudBusy = true;
   if (reason === 'manual') cloudMsg('Syncing…');
   try {
     if (sessionNeedsRefresh(session, now())) {
       session = { ...session, ...(await refreshSession(session.refresh_token)) };
+      if (!sessionStillCurrent()) return;
       saveCloudSession(session);
     }
     const cloud = await pullWorkouts(session);
@@ -1280,12 +1289,14 @@ async function cloudSync(reason = 'manual') {
     const { workouts, added } = mergeWorkouts(local, cloud);
     if (added) { saveWorkouts(workouts); state.history = loadWorkouts(); refreshAll(); }
     await pushWorkouts(session, workouts.length ? workouts : local);
+    if (!sessionStillCurrent()) return;
     saveCloudSession({ ...session, lastSyncMs: now() });
     renderCloudSection();
     if (reason === 'manual') cloudMsg(`Synced — ${added ? `${added} pulled from cloud, ` : ''}all workouts backed up.`);
   } catch (err) {
-    // Expired refresh tokens mean a dead session; anything else is transient.
-    if (/refresh|invalid|expired|revoked/i.test(err.message) && /token|grant|session/i.test(err.message)) {
+    // Expired refresh tokens or an expired JWT mean a dead session that only
+    // a fresh sign-in fixes; anything else is transient.
+    if (/refresh|invalid|expired|revoked/i.test(err.message) && /token|grant|session|jwt/i.test(err.message)) {
       clearCloudSession();
       renderCloudSection();
       cloudMsg('Session expired — sign in again.');
@@ -1297,41 +1308,74 @@ async function cloudSync(reason = 'manual') {
   }
 }
 
-function wireCloud() {
-  $('btn-cloud-signin').addEventListener('click', async () => {
-    const email = $('cloud-email').value.trim();
-    const password = $('cloud-password').value;
-    if (!email || !email.includes('@')) { cloudMsg('Enter your email first.'); return; }
-    if (!password) { cloudMsg('Enter your password.'); return; }
-    cloudMsg('Signing in…');
+function setCloudBusy(busy, label) {
+  const btn = $('btn-cloud-continue');
+  if (btn) btn.textContent = busy ? label : 'Sign in or create account';
+  const form = $('cloud-form');
+  if (form) form.querySelectorAll('input, button').forEach((el) => { el.disabled = busy; });
+  if (busy) cloudMsg(label);
+}
+
+function isInvalidCreds(err) {
+  return err.code === 'invalid_credentials' || /invalid login credentials/i.test(err.message);
+}
+
+/**
+ * One forgiving action: try sign-in; if the credentials match no account, try
+ * creating one (auto-confirmed server-side, so signup returns a session). A
+ * sessionless signup means GoTrue obfuscated an existing email — one sign-in
+ * retry tells "right password after all" apart from "wrong password".
+ */
+async function cloudAuthSubmit() {
+  const email = $('cloud-email').value.trim();
+  const password = $('cloud-password').value;
+  if (!email || !email.includes('@')) { cloudMsg('Enter your email first.'); return; }
+  if (!password) { cloudMsg('Enter a password.'); return; }
+  let created = false;
+  try {
+    let session;
+    setCloudBusy(true, 'Signing in…');
     try {
-      const session = await signInWithPassword(email, password);
-      saveCloudSession(session);
-      $('cloud-password').value = '';
-      renderCloudSection();
-      cloudMsg('Signed in — syncing…');
-      await cloudSync('manual');
-    } catch (err) { cloudMsg(`Sign-in failed: ${err.message}`); }
-  });
-  $('btn-cloud-create').addEventListener('click', async () => {
-    const email = $('cloud-email').value.trim();
-    const password = $('cloud-password').value;
-    if (!email || !email.includes('@')) { cloudMsg('Enter your email first.'); return; }
-    if (!password || password.length < 8) { cloudMsg('Pick a password (8+ characters).'); return; }
-    cloudMsg('Creating account…');
-    try {
-      const session = await signUp(email, password);
-      if (session) {
-        saveCloudSession(session);
-        $('cloud-password').value = '';
-        renderCloudSection();
-        cloudMsg('Account created — syncing…');
-        await cloudSync('manual');
-      } else {
-        // Confirmation-required project: the account exists but is inactive.
-        cloudMsg('Account created. It needs one-time activation — tell Janai and she will flip it on, then tap Sign in.');
+      session = await signInWithPassword(email, password);
+    } catch (err) {
+      if (!isInvalidCreds(err)) throw err;
+      // 8+ is signup policy only — an existing account may have a shorter
+      // password, so the sign-in attempt above runs ungated.
+      if (password.length < 8) { cloudMsg('No account matched. To create one, use a password with at least 8 characters.'); return; }
+      console.log('[cloud] no account matched — trying signup:', err.code, err.message);
+      created = true;
+      setCloudBusy(true, 'Creating account…');
+      session = await signUp(email, password);
+      if (!session) {
+        created = false;
+        session = await signInWithPassword(email, password).catch((e2) => {
+          if (isInvalidCreds(e2)) { throw Object.assign(new Error('User already registered'), { code: 'user_already_exists' }); }
+          throw e2;
+        });
       }
-    } catch (err) { cloudMsg(`Could not create account: ${err.message}`); }
+    }
+    saveCloudSession(session);
+    $('cloud-password').value = '';
+    renderCloudSection();
+    cloudMsg(created ? `New account created for ${email} — syncing…` : 'Signed in — syncing…');
+    await cloudSync('manual');
+  } catch (err) {
+    console.log('[cloud] auth failed:', err.code || '(no code)', err.message);
+    cloudMsg(mapAuthError(err));
+  } finally {
+    setCloudBusy(false);
+  }
+}
+
+function wireCloud() {
+  $('cloud-form').addEventListener('submit', (e) => { e.preventDefault(); cloudAuthSubmit(); });
+  $('btn-cloud-showpw').addEventListener('click', () => {
+    const pw = $('cloud-password');
+    const show = pw.type === 'password';
+    pw.type = show ? 'text' : 'password';
+    const btn = $('btn-cloud-showpw');
+    btn.textContent = show ? 'Hide' : 'Show';
+    btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
   });
   $('btn-cloud-sync').addEventListener('click', () => cloudSync('manual'));
   $('btn-cloud-signout').addEventListener('click', () => {

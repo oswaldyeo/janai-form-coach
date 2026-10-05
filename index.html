@@ -69,7 +69,7 @@
 
       <div class="card privacy">
         <span class="dot">●</span>
-        <p><b>Private by design.</b> Logs and camera processing stay on this device. No video, image, or pose landmarks are uploaded. A finished workout leaves the device only when you tap “Send to Janai Health.”</p>
+        <p><b>Private by design.</b> Camera and pose processing stay 100% on-device — no video, image, or pose landmark is ever uploaded. Your workout log also stays on this device unless you choose to share it: signing in backs it up to your private cloud account, and “Send to Janai Health” shares a finished workout.</p>
       </div>
 
       <div id="install-banner" class="card install-card hidden" role="status">
@@ -268,17 +268,22 @@
       <div class="set-field" style="margin-top:14px">
         <label>Account &amp; cloud sync</label>
         <div id="cloud-signedout">
-          <input id="cloud-email" type="email" inputmode="email" autocomplete="username" placeholder="you@email.com" />
-          <input id="cloud-password" type="password" autocomplete="current-password" placeholder="password" style="margin-top:8px" />
-          <button class="ghost wide" id="btn-cloud-signin" style="margin-top:8px">Sign in &amp; sync</button>
-          <button class="ghost wide" id="btn-cloud-create" style="margin-top:8px">Create account</button>
+          <div class="muted" style="margin-bottom:8px">Backs up your workout log to your private account. Camera &amp; pose always stay 100% on-device.</div>
+          <form id="cloud-form" novalidate>
+            <input id="cloud-email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="you@email.com" />
+            <div style="display:flex; gap:8px; margin-top:8px">
+              <input id="cloud-password" type="password" autocomplete="current-password" placeholder="password (8+ characters)" style="flex:1; min-width:0" />
+              <button type="button" class="ghost small" id="btn-cloud-showpw" aria-label="Show password">Show</button>
+            </div>
+            <button type="submit" class="primary wide" id="btn-cloud-continue" style="margin-top:8px">Sign in or create account</button>
+          </form>
         </div>
         <div id="cloud-signedin" hidden>
           <div class="muted" id="cloud-status"></div>
           <button class="ghost wide" id="btn-cloud-sync" style="margin-top:8px">Sync now</button>
           <button class="ghost wide" id="btn-cloud-signout" style="margin-top:8px">Sign out</button>
         </div>
-        <div class="muted" id="cloud-msg" style="margin-top:6px"></div>
+        <div class="muted" id="cloud-msg" style="margin-top:6px" role="status" aria-live="polite"></div>
       </div>
       <div class="set-field" style="margin-top:14px">
         <label>Data</label>
@@ -299,6 +304,6 @@
 
 </div>
 
-<script type="module" src="./js/app.js?v=27"></script>
+<script type="module" src="./js/app.js?v=28"></script>
 </body>
 </html>

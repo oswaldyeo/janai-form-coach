@@ -1,6 +1,7 @@
 // Cloud sync — Supabase over plain fetch. No SDK, no runtime dependencies.
 //
-// Auth is GoTrue email OTP / magic link; data is one PostgREST table
+// Auth is GoTrue email + password (new signups are auto-confirmed server-side,
+// so signup returns a session directly); data is one PostgREST table
 // (formcoach_workouts) with owner-only row-level security, so the publishable
 // key below is safe to ship: without a signed-in user's JWT it can read and
 // write nothing. Local storage remains the source of truth — the cloud is a
@@ -45,6 +46,43 @@ export function sessionFromTokenResponse(body) {
   };
 }
 
+/**
+ * Map an auth/network error → one short human sentence. Pure: reads only
+ * `err.code` (GoTrue error_code, when the API sent one) and `err.message`.
+ * The UI shows the result and console.logs the raw error for debugging.
+ */
+export function mapAuthError(err) {
+  const code = (err && err.code) || '';
+  const msg = String((err && err.message) || '').toLowerCase();
+  if (code === 'user_already_exists' || msg.includes('already registered')) {
+    return 'This email already has an account and that password didn’t match — check the password or ask Janai for a reset.';
+  }
+  if (code === 'invalid_credentials' || msg.includes('invalid login credentials')) {
+    return 'Wrong email or password — double-check and try again.';
+  }
+  if (code === 'email_not_confirmed' || msg.includes('not confirmed')) {
+    return 'This account isn’t activated yet — tell Janai and she’ll switch it on.';
+  }
+  if (code === 'weak_password' || msg.includes('password should be')) {
+    return 'Password is too short — use at least 8 characters.';
+  }
+  if (code === 'validation_failed' || msg.includes('validate email') || msg.includes('invalid format')) {
+    return 'That doesn’t look like a valid email address.';
+  }
+  if (code === 'signup_disabled' || msg.includes('signups not allowed')) {
+    return 'New sign-ups are switched off right now — tell Janai.';
+  }
+  if (code.includes('rate_limit') || msg.includes('rate limit') || msg.includes('too many requests')) {
+    return 'Too many attempts — wait a minute, then try again.';
+  }
+  // fetch() rejections: Chrome "Failed to fetch", Safari "Load failed",
+  // Firefox "NetworkError when attempting to fetch resource".
+  if (msg.includes('fetch') || msg.includes('load failed') || msg.includes('networkerror') || msg.includes('network request failed')) {
+    return 'You look offline — check your connection and try again.';
+  }
+  return `Something went wrong — try again. (${(err && err.message) || 'unknown error'})`;
+}
+
 // ── network (thin wrappers; errors surface as thrown Error with message) ─────
 
 async function call(path, { method = 'GET', jwt = null, body = undefined, headers = {} } = {}) {
@@ -63,27 +101,20 @@ async function call(path, { method = 'GET', jwt = null, body = undefined, header
   try { json = text ? JSON.parse(text) : null; } catch { /* non-JSON body */ }
   if (!res.ok) {
     const msg = (json && (json.msg || json.message || json.error_description || json.error)) || `HTTP ${res.status}`;
-    throw new Error(msg);
+    const err = new Error(msg);
+    err.code = (json && json.error_code) || null; // GoTrue machine-readable code
+    err.status = res.status;
+    throw err;
   }
   return json;
 }
 
-/** Email a one-time code / magic link. Creates the account on first use. */
-export function requestOtp(email) {
-  return call('/auth/v1/otp', { method: 'POST', body: { email, create_user: true } });
-}
-
-/** Exchange the emailed 6-digit code for a session. */
-export async function verifyOtp(email, token) {
-  const body = await call('/auth/v1/verify', { method: 'POST', body: { type: 'email', email, token } });
-  const session = sessionFromTokenResponse(body);
-  if (!session) throw new Error('No session returned — code may be expired.');
-  return session;
-}
-
 /**
- * Create an account with email + password. Returns a session when the project
- * auto-confirms; otherwise null (account exists but needs activation first).
+ * Create an account with email + password. The DB auto-confirms new signups
+ * (trigger `formcoach_autoconfirm` on auth.users), so a genuinely new email
+ * returns a session directly. An already-registered email returns a sessionless
+ * obfuscated user (GoTrue anti-enumeration) — callers should treat null as
+ * "this email probably has an account" and retry sign-in.
  */
 export async function signUp(email, password) {
   const body = await call('/auth/v1/signup', { method: 'POST', body: { email, password } });

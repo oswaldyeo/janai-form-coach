@@ -130,7 +130,9 @@ export function completedSetCount(workout) {
 
 export function totalReps(workout) {
   let n = 0;
-  for (const ex of workout.exercises || []) for (const s of ex.sets || []) if (s.completed) n += s.reps || 0;
+  // Number() guard: reps can arrive as a string from a cloud row or imported
+  // backup; += on a string would concatenate, and the total reaches innerHTML.
+  for (const ex of workout.exercises || []) for (const s of ex.sets || []) if (s.completed) n += Number(s.reps) || 0;
   return n;
 }
 
@@ -242,7 +244,7 @@ export function exerciseHistorySeries(historyWorkouts, exerciseId, { bodyweightK
       for (const s of ex.sets || []) {
         if (!s.completed) continue;
         sets += 1;
-        reps += s.reps || 0;
+        reps += Number(s.reps) || 0;
         volume += setVolume(s, { bodyweightKg });
         if (s.weight == null) continue;
         const orm = epley1RM(s.weight, s.reps);

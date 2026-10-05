@@ -4,8 +4,10 @@ An on-device, browser-based **strength tracker** with an optional **camera form
 coach**. Log real weighted workouts — routines → workouts → exercises → sets
 (weight × reps) — Hevy-style, and, on the lifts a phone camera can actually see,
 let the on-device pose model count your reps and critique your form. Pose runs
-**entirely on-device**; no video, image, landmark, or workout data ever leaves
-your phone.
+**entirely on-device**; no video, image, or pose landmark ever leaves your
+phone. Your workout log is local-first too — it leaves the device only if you
+opt in: sign in to back it up to your private cloud account, or send a
+finished workout to Janai Health.
 
 Grown from the `bodypark-coach` spike → a v1 camera rep-counter → this v2
 tracker.
@@ -92,7 +94,7 @@ It works under a **GitHub Pages subpath** because every URL is relative.
 ## Test
 
 ```bash
-npm test               # node --test — 135 tests, no framework
+npm test               # node --test — 233 tests, no framework
 ```
 
 The suite covers the pure engine: geometry, the rep state machine, per-exercise
@@ -196,6 +198,19 @@ keep working. `migratedFrom` is present only if any workout was imported. The v1
 - **Cadence score**: per-rep tempo derived for free from the camera timestamps,
   scored against the Occam 5/5 (10 s/rep) target.
 
+### Account & cloud sync (opt-in)
+
+Settings → *Account & cloud sync* backs the workout **log** up to a private
+Supabase store (owner-only row-level security, plain `fetch`, no SDK — see
+`js/engine/cloud.js`). Auth is email + password with **one forgiving action**:
+the button tries sign-in first and transparently creates the account when the
+email is new (signups are auto-confirmed server-side, so there's no email
+verification dance). GoTrue errors are mapped to plain-English copy by the
+pure, tested `mapAuthError()`; raw errors go to the console. localStorage
+remains the source of truth — sync pulls, merges by workout id (local wins),
+and pushes back, so it never clobbers on-device history. Camera frames and
+pose landmarks are never part of any sync.
+
 ### PWA & offline
 
 `manifest.webmanifest` + `sw.js` make it installable and launchable full-screen.
@@ -220,8 +235,10 @@ log manually, but can't run the camera until it's been online once.
   or load. `low`/`proxy` lifts are labelled *experimental*; `none` lifts show no
   coach button at all.
 - **Lite model.** Uses `pose_landmarker_lite` for phone performance.
-- **Privacy is the whole point.** Everything stays on-device. No uploads, no
-  social feed, no cloud replay.
+- **Privacy is the whole point.** Camera and pose stay 100% on-device — never
+  uploaded, period. The workout log is local-first; cloud backup is opt-in,
+  per-account, and holds only the log (no video, no landmarks). No social
+  feed, no cloud replay.
 
 ## Development notes
 
