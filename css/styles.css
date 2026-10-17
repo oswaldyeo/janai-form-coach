@@ -550,16 +550,12 @@ button.small { min-height: 40px; padding: 8px 12px; font-size: 13px; border-radi
 /* storage write failures — pinned above everything, never silent */
 .storage-alert { position: sticky; top: 0; z-index: 20; margin: 0; padding: 10px 14px; background: #4a1218; color: #ffd7dc; border-bottom: 1px solid var(--bad); font-size: 13px; font-weight: 600; }
 
-/* undelivered-workout outbox on Home */
-.outbox-card { border: 1px solid var(--warn); background: #241c0e; }
-.outbox-head { display: flex; align-items: baseline; gap: 10px; color: var(--warn); font-weight: 600; }
-.outbox-count { font-size: 34px; line-height: 1; color: var(--warn); }
-.outbox-card .muted { margin: 6px 0 10px; }
-
-/* Janai auto-sync status pill (header) */
+/* signed-out: one calm prompt on Home (not an alarm) */
+.signin-prompt { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.signin-copy { display: flex; flex-direction: column; gap: 2px; }
 .sync-pill { border: 0; font: inherit; cursor: pointer; }
 .sync-pill[data-state="synced"] { color: #7fe0a8; }
 .sync-pill[data-state="pending"], .sync-pill[data-state="syncing"] { color: var(--warn); }
 .sync-pill[data-state="offline"] { color: var(--muted); }
 .sync-pill[data-state="error"] { color: var(--bad); }
-.sync-pill[data-state="unpaired"] { color: var(--muted); opacity: .8; }
+.sync-pill[data-state="signedout"] { color: var(--muted); opacity: .8; }

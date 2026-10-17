@@ -24,7 +24,7 @@
     </div>
     <div class="head-right">
       <div class="pill" id="status">starting…</div>
-      <button class="pill sync-pill" id="sync-pill" data-state="unpaired" aria-label="Sync status">Not paired</button>
+      <button class="pill sync-pill" id="sync-pill" data-state="signedout" aria-label="Sync status">Signed out</button>
       <button class="icon-btn" id="btn-settings" aria-label="Settings">⚙︎</button>
     </div>
   </header>
@@ -44,13 +44,9 @@
         <button class="resume-btn hidden" id="btn-resume-workout">Resume active workout <span>→</span></button>
       </div>
 
-      <div class="card outbox-card hidden" id="outbox-card" role="status" aria-live="polite">
-        <div class="outbox-head"><b class="outbox-count" id="outbox-count">0</b><span id="outbox-label">workouts not delivered to Janai Health</span></div>
-        <div class="muted tiny" id="outbox-detail"></div>
-        <div class="row-2 outbox-actions">
-          <button class="primary" id="btn-outbox-send">Send now 🏋️</button>
-          <button class="ghost hidden" id="btn-outbox-confirm">Mark received</button>
-        </div>
+      <div class="card signin-prompt hidden" id="signin-prompt" role="status">
+        <div class="signin-copy"><b>Back up your workouts</b><span class="muted tiny" id="signin-prompt-detail"></span></div>
+        <button class="ghost small" id="btn-signin-prompt">Sign in</button>
       </div>
 
       <div class="card wod-card">
@@ -81,7 +77,7 @@
 
       <div class="card privacy">
         <span class="dot">●</span>
-        <p><b>Private by design.</b> Camera and pose processing stay 100% on-device — no video, image, or pose landmark is ever uploaded. Your workout log also stays on this device unless you opt in: pairing Janai auto-sync saves each finished workout to your private sync server automatically, signing in backs it up to your private cloud account, and “Send to Janai Health” shares a finished workout. Camera and pose data never sync.</p>
+        <p><b>Private by design.</b> Camera and pose processing stay 100% on-device — no video, image, or pose landmark is ever uploaded. Your workout log stays on this device until you sign in; after that every finished or edited workout backs up automatically to your private account (only you can read it). Camera and pose data never sync.</p>
       </div>
 
       <div id="install-banner" class="card install-card hidden" role="status">
@@ -118,7 +114,6 @@
         <div class="head-row">
           <div class="label">Workout history</div>
           <div style="display:flex;gap:6px">
-            <button class="ghost small" id="btn-send-pending" hidden>Send pending 🏋️</button>
             <button class="ghost small" id="btn-export">Export JSON</button>
           </div>
         </div>
@@ -161,7 +156,6 @@
         <div id="summary-body" style="margin-top:8px"></div>
       </div>
       <div id="summary-prs"></div>
-      <button class="primary" id="btn-summary-send" style="width:100%;margin-bottom:8px">Send to Janai Health 🏋️</button>
       <div class="row-2">
         <button class="ghost" id="btn-summary-export">Export</button>
         <button class="ghost" id="btn-summary-done">Done</button>
@@ -280,7 +274,7 @@
       <div class="set-field" style="margin-top:14px">
         <label>Account &amp; cloud sync</label>
         <div id="cloud-signedout">
-          <div class="muted" style="margin-bottom:8px">Backs up your workout log to your private account. Camera &amp; pose always stay 100% on-device.</div>
+          <div class="muted" style="margin-bottom:8px">Sign in once and every finished or edited workout backs up automatically — including the ones already on this device. Workout log only; camera &amp; pose always stay 100% on-device.</div>
           <form id="cloud-form" novalidate>
             <input id="cloud-email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="you@email.com" />
             <div style="display:flex; gap:8px; margin-top:8px">
@@ -296,32 +290,6 @@
           <button class="ghost wide" id="btn-cloud-signout" style="margin-top:8px">Sign out</button>
         </div>
         <div class="muted" id="cloud-msg" style="margin-top:6px" role="status" aria-live="polite"></div>
-      </div>
-      <div class="set-field" style="margin-top:14px">
-        <label>Janai auto-sync</label>
-        <div id="sync-unpaired">
-          <div class="muted" style="margin-bottom:8px">Saves every finished or edited workout to your private Janai sync server in the background — no share sheet — and restores your history if this device is wiped. Workout log only; camera &amp; pose never leave the device.</div>
-          <input id="sync-url" type="url" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="https://janai-formcoach-sync.…workers.dev" />
-          <input id="sync-invite" type="password" autocomplete="off" placeholder="invite code" style="margin-top:8px" />
-          <button class="primary wide" id="btn-sync-signup" style="margin-top:8px">Create sync account</button>
-          <div class="muted tiny" style="margin:12px 0 6px">Already have a sync token (another device, or restoring after a wipe)?</div>
-          <input id="sync-token-input" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="paste sync token" />
-          <button class="ghost wide" id="btn-sync-pair" style="margin-top:8px">Pair this device</button>
-        </div>
-        <div id="sync-token-once" hidden>
-          <div class="muted" style="margin:8px 0">Your sync token — <b>shown once</b>. Save it in your password manager: you need it to pair another device or restore after a wipe.</div>
-          <input id="sync-token-shown" type="text" readonly autocomplete="off" spellcheck="false" />
-          <div class="row-2" style="margin-top:8px">
-            <button class="ghost" id="btn-sync-copy">Copy</button>
-            <button class="primary" id="btn-sync-token-done">I’ve saved it</button>
-          </div>
-        </div>
-        <div id="sync-paired" hidden>
-          <div class="muted" id="sync-detail"></div>
-          <button class="ghost wide" id="btn-sync-now" style="margin-top:8px">Sync now</button>
-          <button class="ghost wide" id="btn-sync-unpair" style="margin-top:8px">Unpair this device</button>
-        </div>
-        <div class="muted" id="sync-msg" style="margin-top:6px" role="status" aria-live="polite"></div>
       </div>
       <div class="set-field" style="margin-top:14px">
         <label>Data</label>
@@ -342,6 +310,6 @@
 
 </div>
 
-<script type="module" src="./js/app.js?v=30"></script>
+<script type="module" src="./js/app.js?v=31"></script>
 </body>
 </html>

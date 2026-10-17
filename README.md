@@ -97,7 +97,7 @@ It works under a **GitHub Pages subpath** because every URL is relative.
 npm test               # node --test — no framework
 ```
 
-The sync worker tests (`sync/worker.test.mjs`) run the real `sync/schema.sql`
+The dormant sync worker tests (`sync/worker.test.mjs`) run the real `sync/schema.sql`
 against an in-memory SQLite via `node:sqlite`, so they need **Node 22+**; on
 older Node they are skipped and the client-side sync tests in `test/` still run.
 
@@ -202,34 +202,28 @@ keep working. `migratedFrom` is present only if any workout was imported. The v1
 - **Cadence score**: per-rep tempo derived for free from the camera timestamps,
   scored against the Occam 5/5 (10 s/rep) target.
 
-### Account & cloud sync (opt-in)
+### Account & automatic cloud backup (Supabase)
 
-Settings → *Account & cloud sync* backs the workout **log** up to a private
-Supabase store (owner-only row-level security, plain `fetch`, no SDK — see
-`js/engine/cloud.js`). Auth is email + password with **one forgiving action**:
-the button tries sign-in first and transparently creates the account when the
-email is new (signups are auto-confirmed server-side, so there's no email
-verification dance). GoTrue errors are mapped to plain-English copy by the
-pure, tested `mapAuthError()`; raw errors go to the console. localStorage
-remains the source of truth — sync pulls, merges by workout id (local wins),
-and pushes back, so it never clobbers on-device history. Camera frames and
-pose landmarks are never part of any sync.
+Settings → *Account & cloud sync* signs in with email + password (one
+forgiving button: sign-in, or create the account when the email is new;
+signups are auto-confirmed server-side). After that sync is **zero-tap**:
 
-### Janai auto-sync (opt-in, zero-tap)
+- every finished **or edited** workout is queued in the persistent outbox and
+  upserted to the owner-only `formcoach_workouts` table in the background
+  (deduped by workout id, exponential backoff with jitter, offline-safe — it
+  resumes on `online`, on foreground, and on the next launch);
+- boot / sign-in / foreground pull and merge, so localStorage is a cache that
+  rehydrates after a wipe (a pending local edit always wins);
+- the first sign-in per account **backfills** all local history plus anything
+  left in the legacy delivery outbox, so workouts logged before signing in are
+  rescued automatically.
 
-Settings → *Janai auto-sync* pairs the device with the owner's Cloudflare
-Worker + D1 backend in [`sync/`](sync/) (create an account with an invite code
-— the device token is **shown once** and kept in localStorage — or paste an
-existing token). Once paired, every finished **or edited** workout is queued in
-the outbox and POSTed in the background (batched, deduped by workout id,
-exponential backoff with jitter, offline-safe — it resumes on `online` and when
-the app returns to the foreground). Boot pulls everything changed since the
-last server cursor (`GET /workouts?since=`) and merges it in, so a wiped
-localStorage re-hydrates from the server. A pending local edit always wins over
-the pull. The header pill shows *Synced ✓ / Pending N / Offline / Not paired*.
-Payloads are the workout log only: `js/engine/sync.js` strips per-set camera
-blobs and any landmark/frame/video keys before sending, and the Worker strips
-them again before storing. See [`REPORT.md`](REPORT.md) for deployment.
+The header pill shows *Synced ✓ / Pending N / Offline / Signed out*; signed
+out, Home shows one calm "Back up your workouts" prompt. Code:
+`js/engine/cloud.js` (REST client), `js/engine/autosync.js` (one sync pass),
+`js/engine/sync.js` (outbox/backoff/merge rules). Only the workout log syncs:
+per-set camera blobs and any landmark/frame/video keys are stripped first.
+The Cloudflare Worker in [`sync/`](sync/) is **dormant** (not deployed).
 
 ### PWA & offline
 

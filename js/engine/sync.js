@@ -1,6 +1,8 @@
-// Auto-sync — client side of the Janai sync Worker (sync/worker.js).
+// Auto-sync engine — transport-agnostic outbox, retry, and merge rules.
+// The live transport is Supabase (engine/cloud.js, orchestrated by
+// engine/autosync.js). The Cloudflare Worker client at the bottom is DORMANT.
 //
-// Finished (and edited) workouts sit in the persistent outbox until the Worker
+// Finished (and edited) workouts sit in the persistent outbox until the server
 // acknowledges them; a boot-time pull-merge re-hydrates localStorage from the
 // server so on-device history becomes a cache that can always be rebuilt.
 // Everything here is pure or takes an injected `fetchImpl` / `post` / `get`,
@@ -9,8 +11,7 @@
 // Only the workout LOG ever syncs: per-set camera blobs, the v1 legacy copy and
 // anything pose-shaped are stripped before a request is built.
 
-// Set to the deployed Worker URL (e.g. https://janai-formcoach-sync.<sub>.workers.dev)
-// to pre-fill Settings; the user can still enter it there.
+// DORMANT (Cloudflare Worker): no longer read by the app.
 export const SYNC_DEFAULTS = Object.freeze({ url: '' });
 
 export const NEVER_SYNC_KEYS = Object.freeze([
@@ -154,21 +155,29 @@ export function applySyncResults(outbox, { sent = [], failed = [], dropped = [] 
 export async function drainOutbox({ outbox, workouts, post, nowMs, prepare = (w) => w, batchSize = 25 }) {
   const byId = new Map((workouts || []).filter((w) => w && w.id).map((w) => [w.id, w]));
   const result = { sent: [], failed: [], dropped: [], error: null };
+  // One payload per workout id: duplicate outbox entries (e.g. from an older
+  // build or two tabs) ride along with the first and share its outcome.
   const sendable = [];
+  const byEntryId = new Map();
   for (const e of dueEntries(outbox, nowMs)) {
     const w = byId.get(e.id);
-    if (w) sendable.push({ e, w }); else result.dropped.push(snap(e)); // no longer stored locally
+    if (!w) { result.dropped.push(snap(e)); continue; } // no longer stored locally
+    const group = byEntryId.get(e.id);
+    if (group) { group.snaps.push(snap(e)); continue; }
+    const g = { id: e.id, w, snaps: [snap(e)] };
+    byEntryId.set(e.id, g);
+    sendable.push(g);
   }
   for (let i = 0; i < sendable.length; i += batchSize) {
     const chunk = sendable.slice(i, i + batchSize);
     try {
       const res = await post(chunk.map((c) => sanitizeForSync(prepare(c.w))));
       const rejected = new Set(((res && res.rejected) || []).map((r) => r && r.id));
-      for (const c of chunk) (rejected.has(c.e.id) ? result.dropped : result.sent).push(snap(c.e));
+      for (const c of chunk) (rejected.has(c.id) ? result.dropped : result.sent).push(...c.snaps);
     } catch (err) {
       result.error = err;
       const msg = (err && err.message) || 'sync failed';
-      for (const c of sendable.slice(i)) result.failed.push({ ...snap(c.e), error: msg });
+      for (const c of sendable.slice(i)) for (const sn of c.snaps) result.failed.push({ ...sn, error: msg });
       break;
     }
   }
@@ -192,17 +201,22 @@ export async function pullAll({ get, since = 0, pageSize = 200, maxPages = 50 })
 
 // ── status ───────────────────────────────────────────────────────────────────
 
-/** One sync-status pill state + label. */
-export function syncStatus({ paired, online = true, pending = 0, busy = false, authFailed = false }) {
-  if (!paired) return { state: 'unpaired', label: 'Not paired' };
-  if (authFailed) return { state: 'error', label: 'Re-pair sync' };
+/**
+ * One sync-status pill state + label. Signed out is a calm state, not an
+ * error: workouts keep queuing locally and upload on the next sign-in.
+ */
+export function syncStatus({ signedIn, online = true, pending = 0, busy = false, authFailed = false }) {
+  if (!signedIn) return { state: 'signedout', label: 'Signed out' };
+  if (authFailed) return { state: 'error', label: 'Sign in again' };
   if (!online) return { state: 'offline', label: pending ? `Offline · ${pending} pending` : 'Offline' };
   if (busy) return { state: 'syncing', label: 'Syncing…' };
   if (pending) return { state: 'pending', label: `Pending ${pending}` };
   return { state: 'synced', label: 'Synced ✓' };
 }
 
-// ── network (thin; fetch injected) ───────────────────────────────────────────
+// ── DORMANT: Cloudflare Worker client (sync/worker.js) ───────────────────────
+// The Worker is not deployed; the live transport is Supabase (engine/cloud.js
+// + engine/autosync.js). Kept, with its tests, in case the Worker is revived.
 
 /** https://host[/path] with no trailing slash; plain http only for localhost. null if unusable. */
 export function normalizeSyncUrl(raw) {

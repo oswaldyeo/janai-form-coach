@@ -14,7 +14,7 @@ import {
 import { RepEngine } from './engine/rep-engine.js';
 import { calibrate } from './engine/calibration.js';
 import { SessionRecorder, toWorkoutExportDocument } from './engine/session.js';
-import { buildDeliveryDocument, deliveryFilename, enrichWorkoutForDelivery } from './engine/delivery.js';
+import { enrichWorkoutForDelivery } from './engine/delivery.js';
 import {
   makeWorkout, addExercise, removeExercise, reorderExercise, addSet, removeSet, reorderSet, updateSet,
   workoutVolume, completedSetCount, totalReps, workoutDurationSec,
@@ -34,16 +34,14 @@ import {
   loadWorkouts, saveWorkouts, clearWorkouts, loadRoutines, saveRoutine, deleteRoutine,
   loadSettings, saveSettings, loadCalibration, saveCalibration, ensureMigrated,
   persistActiveWorkout, clearActiveWorkout, resolveActiveOnBoot, commitFinishedWorkout,
-  markDelivered, markHandedOff, pendingWorkouts, outboxStatus, storageHealth, onStorageError,
-  loadHistory, loadCloudSession, saveCloudSession, clearCloudSession,
-  updateWorkout, saveOutbox, queueManyForDelivery, loadSyncConfig, saveSyncConfig, clearSyncConfig,
+  outboxStatus, storageHealth, onStorageError, loadOutbox, saveOutbox, queueManyForDelivery,
+  loadHistory, loadCloudSession, saveCloudSession, clearCloudSession, isCloudBackfilled, markCloudBackfilled,
+  updateWorkout,
 } from './storage.js';
 import { exportBundle, parseBundle, mergeWorkouts } from './engine/backup.js';
-import { signUp, signInWithPassword, refreshSession, pullWorkouts, pushWorkouts, sessionNeedsRefresh, mapAuthError } from './engine/cloud.js';
-import {
-  SYNC_DEFAULTS, makeSyncClient, normalizeSyncUrl, drainOutbox, applySyncResults, nextRetryAt,
-  pullAll, mergeRemote, syncStatus,
-} from './engine/sync.js';
+import { signUp, signInWithPassword, makeCloudClient, mapAuthError } from './engine/cloud.js';
+import { nextRetryAt, syncStatus } from './engine/sync.js';
+import { runCloudSync } from './engine/autosync.js';
 
 const $ = (id) => document.getElementById(id);
 const now = () => Date.now();
@@ -207,7 +205,7 @@ function goBack() {
 function renderHome() {
   show($('home-active'), !!state.workout);
   show($('btn-resume-workout'), !!state.workout);
-  refreshPendingBanner();
+  refreshSyncUI();
   renderWOD();
   // Disable "Repeat last workout" when there's nothing to repeat. Set this
   // before the empty-history early return below, or it never runs when empty.
@@ -378,8 +376,8 @@ function editPastWorkout(id) {
 function saveEditedWorkout(workout) {
   if (!updateWorkout(workout, now)) { alert('Could not save the edit — storage is unavailable.'); return; }
   refreshAll();
-  refreshPendingBanner();
-  autoSync('edit');
+  refreshSyncUI();
+  cloudAutoSync('edit');
 }
 
 // Set of exercise ids that appear anywhere in logged history (for "Progress" affordances).
@@ -1028,17 +1026,16 @@ function finishWorkout() {
   endRest();
   if (state.wTimer) { clearInterval(state.wTimer); state.wTimer = null; }
   state.workout = null;
-  cloudSync('auto');               // fire-and-forget; offline just skips
-  autoSync('finish');              // background POST from the outbox; retries on failure
+  cloudAutoSync('finish');         // background upsert from the outbox; retries on failure
   afterHistoryWrite();
   showSummary(finished, prs);
-  if (!res.queued) toast('Saved — but it could not be added to the Janai Health outbox (storage full).');
+  if (!res.queued) toast('Saved on this device — but it could not be queued for cloud backup (storage full).');
 }
 
 function afterHistoryWrite() {
   reloadHistory();
   state.wod = null; // the cached plan was built from the old history
-  refreshPendingBanner();
+  refreshSyncUI();
 }
 
 function describeStorageError(err) {
@@ -1101,7 +1098,6 @@ function showSummary(workout, prs) {
         `<div class="sum-row"><span>${esc(catalogName(p.exerciseId))}</span><b>${p.kinds.join(' · ')}</b></div>`).join('')}</div>`
     : '';
   prHost.innerHTML = prCards + extras;
-  $('btn-summary-send').hidden = !!loadSyncConfig(); // paired ⇒ delivery is automatic
   showScreen('screen-summary');
 }
 
@@ -1369,13 +1365,33 @@ function setCue(text, tone = 'good', speak = false) {
 // ════════════════════════════════════════════════════════════════════════════
 // SETTINGS
 // ════════════════════════════════════════════════════════════════════════════
-// ── cloud sync ───────────────────────────────────────────────────────────────
+// ── cloud auto-sync (Supabase) ───────────────────────────────────────────────
+// THE sync transport. Finished and edited workouts are queued in the outbox
+// (storage.js) and upserted to formcoach_workouts in the background; failures
+// back off and retry. Boot / sign-in / resume pull-merge so localStorage is a
+// rehydrating cache. The first sign-in per account backfills every local
+// workout plus whatever the legacy delivery outbox still held. See
+// engine/autosync.js for the pass itself.
 
-let cloudBusy = false;
+const cloudClient = makeCloudClient();
+const cloudStore = {
+  loadCloudSession, saveCloudSession, clearCloudSession, loadWorkouts, saveWorkouts,
+  loadOutbox, saveOutbox, queueManyForDelivery, isCloudBackfilled, markCloudBackfilled,
+};
+const cloud = { busy: false, again: null, timer: null, authFailed: false, lastError: null };
+const PULL_REASONS = new Set(['boot', 'signin', 'manual', 'online', 'resume']);
+const isOnline = () => typeof navigator === 'undefined' || navigator.onLine !== false;
 
 function cloudMsg(text) {
   const el = $('cloud-msg');
   if (el) el.textContent = text || '';
+}
+
+function currentSyncStatus() {
+  return syncStatus({
+    signedIn: !!loadCloudSession(), online: isOnline(), pending: outboxStatus().total,
+    busy: cloud.busy, authFailed: cloud.authFailed,
+  });
 }
 
 function renderCloudSection() {
@@ -1386,51 +1402,59 @@ function renderCloudSection() {
   sIn.hidden = !session;
   if (session) {
     const when = session.lastSyncMs ? new Date(session.lastSyncMs).toLocaleString() : 'never';
-    $('cloud-status').textContent = `Signed in as ${session.user?.email || '?'} · Last sync: ${when}`;
+    $('cloud-status').textContent = `Signed in as ${session.user?.email || '?'} · ${currentSyncStatus().label} · last sync ${when}`;
   }
 }
 
-/** Pull→merge→push. Local store always wins on conflicts (merge dedupes by id). */
-async function cloudSync(reason = 'manual') {
-  let session = loadCloudSession();
-  if (!session) return;
-  if (cloudBusy) { if (reason === 'manual') cloudMsg('Still syncing — hang on…'); return; }
-  // True while the session that started this sync is still the stored one —
-  // a mid-flight sign-out (or account switch) must not be resurrected by a
-  // late saveCloudSession below.
-  const sessionStillCurrent = () => {
-    const cur = loadCloudSession();
-    return !!cur && cur.user?.id === session.user?.id;
-  };
-  cloudBusy = true;
+function scheduleCloudRetry() {
+  if (cloud.timer) { clearTimeout(cloud.timer); cloud.timer = null; }
+  if (!loadCloudSession()) return;
+  const at = nextRetryAt(loadOutbox());
+  if (at == null) return;
+  cloud.timer = setTimeout(() => cloudAutoSync('retry'), Math.max(1000, at - now()));
+}
+
+function syncPrepare(w) {
+  return enrichWorkoutForDelivery(w, deliveryResolver); // names + muscles for Janai Health readers
+}
+
+/** Background sync pass. Never throws; signed-out and offline are quiet no-ops. */
+async function cloudAutoSync(reason = 'auto') {
+  if (!loadCloudSession() || !isOnline()) { refreshSyncUI(); return; } // 'online' event retriggers
+  if (cloud.busy) { cloud.again = cloud.again === 'pull' || PULL_REASONS.has(reason) ? 'pull' : 'push'; return; }
+  cloud.busy = true;
+  refreshSyncUI();
   if (reason === 'manual') cloudMsg('Syncing…');
   try {
-    if (sessionNeedsRefresh(session, now())) {
-      session = { ...session, ...(await refreshSession(session.refresh_token)) };
-      if (!sessionStillCurrent()) return;
-      saveCloudSession(session);
+    const r = await runCloudSync({
+      store: cloudStore, client: cloudClient, now, pull: PULL_REASONS.has(reason), prepare: syncPrepare,
+    });
+    cloud.lastError = r.error ? r.error.message : null;
+    cloud.authFailed = false;
+    if (r.status === 'expired') {
+      cloudMsg('Your sign-in expired — sign in again. Workouts keep saving on this device and upload after.');
+    } else if (r.status === 'error') {
+      console.log('[cloud] sync failed:', reason, r.error && r.error.status, r.error && r.error.message);
+      if (reason === 'manual' || reason === 'signin') cloudMsg(`Couldn’t reach the cloud (${r.error.message}) — will retry automatically.`);
+    } else if (r.status === 'ok') {
+      if (r.added || r.updated) { reloadHistory(); refreshAll(); }
+      if (r.added && (reason === 'boot' || reason === 'signin')) toast(`Restored ${r.added} workout${r.added === 1 ? '' : 's'} from your account.`);
+      if (reason === 'manual' || reason === 'signin') {
+        const bits = [];
+        if (r.backfilled) bits.push(`${r.backfilled} on this device backed up`);
+        if (r.added) bits.push(`${r.added} restored`);
+        cloudMsg(`Synced${bits.length ? ` — ${bits.join(', ')}` : ''}. Every workout now saves automatically.`);
+      }
     }
-    const cloud = await pullWorkouts(session);
-    const local = loadWorkouts();
-    const { workouts, added } = mergeWorkouts(local, cloud);
-    if (added) { saveWorkouts(workouts); reloadHistory(); refreshAll(); }
-    await pushWorkouts(session, workouts.length ? workouts : local);
-    if (!sessionStillCurrent()) return;
-    saveCloudSession({ ...session, lastSyncMs: now() });
-    renderCloudSection();
-    if (reason === 'manual') cloudMsg(`Synced — ${added ? `${added} pulled from cloud, ` : ''}all workouts backed up.`);
+    if (r.dropped) console.warn('[cloud] dropped from outbox (no longer stored locally):', r.dropped);
   } catch (err) {
-    // Expired refresh tokens or an expired JWT mean a dead session that only
-    // a fresh sign-in fixes; anything else is transient.
-    if (/refresh|invalid|expired|revoked/i.test(err.message) && /token|grant|session|jwt/i.test(err.message)) {
-      clearCloudSession();
-      renderCloudSection();
-      cloudMsg('Session expired — sign in again.');
-    } else if (reason === 'manual') {
-      cloudMsg(`Sync failed: ${err.message}`);
-    }
+    console.log('[cloud] sync crashed:', err);
   } finally {
-    cloudBusy = false;
+    cloud.busy = false;
+    scheduleCloudRetry();
+    renderCloudSection();
+    refreshSyncUI();
+    if (cloud.again) { const pull = cloud.again === 'pull'; cloud.again = null; cloudAutoSync(pull ? 'resume' : 'again'); }
   }
 }
 
@@ -1483,8 +1507,8 @@ async function cloudAuthSubmit() {
     saveCloudSession(session);
     $('cloud-password').value = '';
     renderCloudSection();
-    cloudMsg(created ? `New account created for ${email} — syncing…` : 'Signed in — syncing…');
-    await cloudSync('manual');
+    cloudMsg(created ? `New account created for ${email} — backing up your workouts…` : 'Signed in — backing up your workouts…');
+    await cloudAutoSync('signin');
   } catch (err) {
     console.log('[cloud] auth failed:', err.code || '(no code)', err.message);
     cloudMsg(mapAuthError(err));
@@ -1503,15 +1527,24 @@ function wireCloud() {
     btn.textContent = show ? 'Hide' : 'Show';
     btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
   });
-  $('btn-cloud-sync').addEventListener('click', () => cloudSync('manual'));
+  $('btn-cloud-sync').addEventListener('click', () => cloudAutoSync('manual'));
   $('btn-cloud-signout').addEventListener('click', () => {
     clearCloudSession();
+    if (cloud.timer) { clearTimeout(cloud.timer); cloud.timer = null; }
     renderCloudSection();
-    cloudMsg('Signed out. Your data stays on this device.');
+    refreshSyncUI();
+    cloudMsg('Signed out. Workouts keep saving on this device and upload when you sign in again.');
+  });
+  $('sync-pill').addEventListener('click', () => openSettings({ focusSignIn: true }));
+  $('btn-signin-prompt').addEventListener('click', () => openSettings({ focusSignIn: true }));
+  window.addEventListener('online', () => cloudAutoSync('online'));
+  window.addEventListener('offline', refreshSyncUI);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') cloudAutoSync('resume');
   });
 }
 
-function openSettings() {
+function openSettings({ focusSignIn = false } = {}) {
   const s = state.settings;
   $('seg-units').querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.unit === s.units));
   $('set-bodyweight').value = s.bodyweightKg ?? '';
@@ -1519,12 +1552,14 @@ function openSettings() {
   $('set-autorest').checked = !!s.autoStartRest;
   renderCloudSection();
   cloudMsg('');
-  renderSyncSection();
-  syncMsg('');
   show($('screen-settings'), true);
+  if (focusSignIn && !loadCloudSession()) {
+    const email = $('cloud-email');
+    email.scrollIntoView({ block: 'center' });
+    email.focus();
+  }
 }
 function closeSettings() {
-  hideSyncToken();
   show($('screen-settings'), false);
 }
 
@@ -1563,7 +1598,11 @@ function wireSettings() {
     try {
       const parsed = parseBundle(await file.text());
       const { workouts, added, skipped } = mergeWorkouts(loadWorkouts(), parsed.workouts);
-      if (added) saveWorkouts(workouts);
+      if (added && saveWorkouts(workouts)) {
+        const have = new Set(loadWorkouts().map((w) => w && w.id));
+        queueManyForDelivery(parsed.workouts.filter((w) => w && have.has(w.id)), now);
+        cloudAutoSync('import');
+      }
       let routinesAdded = 0;
       if (parsed.routines.length) {
         const haveR = new Set(loadRoutines().map((r) => r.id));
@@ -1612,288 +1651,31 @@ function exportJSON() {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-// ── Janai auto-sync (sync/worker.js) ─────────────────────────────────────────
-// Finished and edited workouts are queued in the outbox and POSTed in the
-// background; boot pulls everything changed since the stored cursor and merges
-// it in, so a wiped localStorage re-hydrates from the server. Triggers: boot,
-// finish, edit, pairing, coming back online / to the foreground, and a
-// backoff-scheduled retry. Only the sanitised workout log is ever sent.
-
-const FULL_PULL_EVERY_MS = 24 * 60 * 60 * 1000;
-const sync = { busy: false, again: false, timer: null, authFailed: false };
-
-function syncMsg(text) { const el = $('sync-msg'); if (el) el.textContent = text || ''; }
-const isOnline = () => typeof navigator === 'undefined' || navigator.onLine !== false;
-
-function renderSyncStatus() {
-  const cfg = loadSyncConfig();
-  const st = syncStatus({
-    paired: !!cfg, online: isOnline(), pending: cfg ? loadOutbox().length : 0,
-    busy: sync.busy, authFailed: sync.authFailed,
-  });
-  const pill = $('sync-pill');
-  if (pill) { pill.textContent = st.label; pill.dataset.state = st.state; pill.title = `Janai sync: ${st.label}`; }
-  const detail = $('sync-detail');
-  if (detail && cfg) {
-    const when = cfg.lastSyncMs ? new Date(cfg.lastSyncMs).toLocaleString() : 'never';
-    detail.textContent = `${st.label} · ${cfg.url.replace(/^https?:\/\//, '')} · last sync ${when}`;
-  }
-}
-
-function renderSyncSection() {
-  const cfg = loadSyncConfig();
-  const un = $('sync-unpaired'); const on = $('sync-paired');
-  if (!un || !on) return;
-  un.hidden = !!cfg;
-  on.hidden = !cfg;
-  if (!cfg && !$('sync-url').value) $('sync-url').value = SYNC_DEFAULTS.url || '';
-  renderSyncStatus();
-}
-
-function hideSyncToken() {
-  const box = $('sync-token-once');
-  if (box) box.hidden = true;
-  const out = $('sync-token-shown');
-  if (out) out.value = '';
-}
-
-function scheduleSyncRetry() {
-  if (sync.timer) { clearTimeout(sync.timer); sync.timer = null; }
-  if (!loadSyncConfig()) return;
-  const at = nextRetryAt(loadOutbox());
-  if (at == null) return;
-  sync.timer = setTimeout(() => autoSync('retry'), Math.max(1000, at - now()));
-}
-
-function syncPrepare(w) {
-  return enrichWorkoutForDelivery(w, deliveryResolver); // names + muscles for the Mac puller
-}
-
-async function autoSync(reason = 'auto') {
-  const cfg = loadSyncConfig();
-  if (!cfg) { renderSyncStatus(); return; }
-  if (!isOnline()) { renderSyncStatus(); return; } // the 'online' event retriggers
-  if (sync.busy) { sync.again = true; return; }
-  sync.busy = true;
-  renderSyncStatus();
-  const client = makeSyncClient({ url: cfg.url, token: cfg.token });
-  try {
-    // 1) push — local changes first, so a pending edit can't be overwritten by the pull
-    const res = await drainOutbox({
-      outbox: loadOutbox(), workouts: loadWorkouts(), post: client.postWorkouts, nowMs: now(), prepare: syncPrepare,
-    });
-    saveOutbox(applySyncResults(loadOutbox(), res, now()));
-    if (res.dropped.length) console.warn('[sync] dropped from outbox (not stored locally or rejected):', res.dropped.map((d) => d.id));
-    if (res.error) throw res.error;
-
-    // 2) pull-merge — incremental from the cursor; full when the store looks wiped or daily
-    const full = !cfg.cursor || !loadWorkouts().length || now() - (cfg.lastFullPullMs || 0) > FULL_PULL_EVERY_MS;
-    const pulled = await pullAll({ get: client.getWorkouts, since: full ? 0 : cfg.cursor });
-    const pendingIds = new Set(loadOutbox().map((e) => e.id));
-    const { workouts, added, updated } = mergeRemote(loadWorkouts(), pulled.workouts, { pendingIds });
-    if (added || updated) { saveWorkouts(workouts); refreshAll(); }
-    saveSyncConfig({
-      cursor: pulled.cursor, lastSyncMs: now(), lastError: null,
-      ...(full ? { lastFullPullMs: now() } : {}),
-    });
-    sync.authFailed = false;
-    if (reason !== 'boot' && reason !== 'retry' && (added || updated)) {
-      toast(`Synced — ${added ? `${added} restored` : ''}${added && updated ? ', ' : ''}${updated ? `${updated} updated` : ''}.`);
-    }
-    if (reason === 'manual' || reason === 'pair') syncMsg('Synced — every workout is backed up.');
-  } catch (err) {
-    sync.authFailed = err && (err.status === 401 || err.status === 403);
-    saveSyncConfig({ lastError: (err && err.message) || 'sync failed' });
-    console.log('[sync] failed:', reason, err && err.status, err && err.message);
-    if (reason === 'manual' || reason === 'pair') {
-      syncMsg(sync.authFailed ? 'The server rejected this device’s token — unpair and pair again.' : `Sync failed (${err.message}) — will retry automatically.`);
-    }
-  } finally {
-    sync.busy = false;
-    scheduleSyncRetry();
-    refreshPendingBanner();
-    renderSyncStatus();
-    if (sync.again) { sync.again = false; autoSync('again'); }
-  }
-}
-
-function setSyncBusy(busy) {
-  ['btn-sync-signup', 'btn-sync-pair'].forEach((id) => { const b = $(id); if (b) b.disabled = busy; });
-}
-
-// Store the pairing, upload the whole local log once (the server dedupes by
-// id), then sync — which also pulls anything another device already sent.
-function completePairing(url, token, accountId = null) {
-  saveSyncConfig({ url, token, accountId, cursor: 0, lastFullPullMs: 0, pairedAtMs: now(), lastError: null });
-  sync.authFailed = false;
-  queueManyForDelivery(loadWorkouts(), now);
-  renderSyncSection();
-  refreshPendingBanner();
-  autoSync('pair');
-}
-
-async function syncSignup() {
-  const url = normalizeSyncUrl($('sync-url').value);
-  if (!url) { syncMsg('Enter the sync server address (https://…).'); return; }
-  const code = $('sync-invite').value.trim();
-  if (!code) { syncMsg('Enter the invite code.'); return; }
-  setSyncBusy(true);
-  syncMsg('Creating sync account…');
-  try {
-    const { token, accountId } = await makeSyncClient({ url }).signup(code);
-    $('sync-invite').value = '';
-    completePairing(url, token, accountId);
-    // shown once: the only way to pair another device or restore after a wipe
-    $('sync-token-shown').value = token;
-    $('sync-token-once').hidden = false;
-    syncMsg('Paired — save the token below, then tap “I’ve saved it”.');
-  } catch (err) {
-    console.log('[sync] signup failed:', err.status, err.message);
-    syncMsg(err.status === 403 ? 'That invite code wasn’t accepted.' : mapAuthError(err));
-  } finally {
-    setSyncBusy(false);
-  }
-}
-
-async function syncPair() {
-  const url = normalizeSyncUrl($('sync-url').value);
-  if (!url) { syncMsg('Enter the sync server address (https://…).'); return; }
-  const token = $('sync-token-input').value.trim();
-  if (!token) { syncMsg('Paste your sync token.'); return; }
-  setSyncBusy(true);
-  syncMsg('Checking token…');
-  try {
-    await makeSyncClient({ url, token }).getWorkouts(0, 1); // auth check
-    $('sync-token-input').value = '';
-    completePairing(url, token);
-    syncMsg('Paired — restoring and backing up your workouts…');
-  } catch (err) {
-    console.log('[sync] pair failed:', err.status, err.message);
-    syncMsg(err.status === 401 ? 'That token wasn’t accepted by the server.' : mapAuthError(err));
-  } finally {
-    setSyncBusy(false);
-  }
-}
-
-function wireSync() {
-  $('btn-sync-signup').addEventListener('click', syncSignup);
-  $('btn-sync-pair').addEventListener('click', syncPair);
-  $('btn-sync-now').addEventListener('click', () => { syncMsg('Syncing…'); autoSync('manual'); });
-  $('btn-sync-copy').addEventListener('click', async () => {
-    const t = $('sync-token-shown').value;
-    try { await navigator.clipboard.writeText(t); syncMsg('Token copied.'); } catch { $('sync-token-shown').select(); }
-  });
-  $('btn-sync-token-done').addEventListener('click', () => { hideSyncToken(); syncMsg(''); });
-  $('btn-sync-unpair').addEventListener('click', () => {
-    if (!confirm('Unpair this device? Workouts stay on this device; auto-sync stops until you pair again.')) return;
-    clearSyncConfig();
-    if (sync.timer) { clearTimeout(sync.timer); sync.timer = null; }
-    sync.authFailed = false;
-    hideSyncToken();
-    renderSyncSection();
-    refreshPendingBanner();
-    syncMsg('Unpaired. Your data stays on this device.');
-  });
-  $('sync-pill').addEventListener('click', openSettings);
-  window.addEventListener('online', () => autoSync('online'));
-  window.addEventListener('offline', renderSyncStatus);
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') autoSync('resume');
-  });
-}
-
-// ── delivery to Janai Health ─────────────────────────────────────────────────
-// No unauthenticated public write endpoint exists (and none should — this is
-// Os-only health data), so delivery is a local, authenticated hop: the PWA
-// SHARES a workout JSON file into an iOS Shortcut that drops it in Os's iCloud
-// inbox, which a launchd watcher on the Mac ingests. Web Share works offline;
-// the outbox persists un-delivered workouts so nothing is lost on cancel/failure,
-// and the receiver dedupes by workout id so re-sharing is always safe.
+// Catalog names + primary muscle are attached to each synced workout so
+// downstream readers (Janai Health) never need the JS catalog.
 function deliveryResolver(id) {
   const e = getCatalogEntry(id);
   return e ? { name: e.name, primaryMuscle: e.primaryMuscle } : null;
 }
 
-async function sendToJanaiHealth(workouts) {
-  const list = (workouts || []).filter(Boolean);
-  if (!list.length) { toast('Nothing to send — all workouts delivered.'); return; }
-  const doc = buildDeliveryDocument(list, {
-    settings: { units: unit(), bodyweightKg: state.settings.bodyweightKg },
-    resolveEntry: deliveryResolver,
-    nowMs: now(),
-  });
-  const json = JSON.stringify(doc, null, 2);
-  const fname = deliveryFilename(list, now());
-  const ids = list.map((w) => w.id);
-
-  // Preferred: share the file so Os's "Save to Form Coach" Shortcut can drop it
-  // in the iCloud inbox. Feature-detect canShare({files}) before attempting.
-  const file = (typeof File !== 'undefined') ? new File([json], fname, { type: 'application/json' }) : null;
-  if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: 'Form Coach → Janai Health' });
-      // A resolved share only means the sheet closed with a target picked —
-      // not that the Shortcut stored the file. Stay visible until confirmed.
-      markHandedOff(ids, 'share', now);
-      refreshPendingBanner();
-      toast('Shared. Tap “Mark received” once it shows up in Janai Health.');
-      return;
-    } catch (err) {
-      if (err && err.name === 'AbortError') { toast('Send cancelled — still pending.'); return; }
-      // fall through to download fallback on real errors
-    }
+// Header sync pill + the one calm signed-out prompt on Home. Delivery is
+// automatic now: there is no "not delivered / Send now" banner or share sheet.
+function refreshSyncUI() {
+  const st = currentSyncStatus();
+  const pill = $('sync-pill');
+  if (pill) {
+    pill.textContent = st.label;
+    pill.dataset.state = st.state;
+    pill.title = st.state === 'signedout' ? 'Sign in to back up workouts automatically' : `Cloud sync: ${st.label}`;
   }
-  // Fallback (no Web Share, e.g. desktop): download the same file. Os saves it
-  // into the iCloud Form Coach folder manually, so it stays pending (as
-  // "unconfirmed") until he marks it received.
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = fname;
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-  markHandedOff(ids, 'download', now);
-  refreshPendingBanner();
-  toast('Downloaded — move it into the Form Coach iCloud folder, then tap “Mark received”.');
-}
-
-function confirmReceived() {
-  const { unconfirmed } = outboxStatus();
-  if (!unconfirmed.length) return;
-  const n = unconfirmed.length;
-  if (!confirm(`Only confirm if you can see ${n === 1 ? 'this workout' : `these ${n} workouts`} in Janai Health.\n\nMark ${n} as received?`)) return;
-  markDelivered(unconfirmed.map((e) => e.id));
-  refreshPendingBanner();
-}
-
-// Undelivered workouts are shown on Home, not just behind a History button.
-function refreshPendingBanner() {
-  const st = outboxStatus();
-  const n = st.total;
-  const btn = $('btn-send-pending');
-  const paired = !!loadSyncConfig();
-  if (btn) {
-    // While paired, delivery is automatic — the sync pill owns the status.
-    btn.hidden = n === 0 || paired;
-    btn.textContent = n > 1 ? `Send ${n} pending 🏋️` : 'Send pending 🏋️';
+  const prompt = $('signin-prompt');
+  if (!prompt) return;
+  const signedOut = st.state === 'signedout';
+  const n = loadWorkouts().length;
+  show(prompt, signedOut && n > 0);
+  if (signedOut && n > 0) {
+    $('signin-prompt-detail').textContent = `${n} workout${n === 1 ? ' is' : 's are'} saved on this device and will back up automatically.`;
   }
-  renderSyncStatus();
-  const card = $('outbox-card');
-  if (!card) return;
-  show(card, n > 0 && !paired);
-  if (!n || paired) return;
-  $('outbox-count').textContent = String(n);
-  $('outbox-label').textContent = n === 1 ? 'workout not delivered to Janai Health' : 'workouts not delivered to Janai Health';
-  const bits = [];
-  if (st.unsent.length) bits.push(`${st.unsent.length} never sent`);
-  if (st.unconfirmed.length) {
-    const lastAt = Math.max(...st.unconfirmed.map((e) => e.handedOffAt || 0));
-    bits.push(`${st.unconfirmed.length} shared, not confirmed (last ${fmtDate(lastAt)})`);
-  }
-  const oldest = Math.min(...[...st.unsent, ...st.unconfirmed].map((e) => e.endedAtMs || e.queuedAt || Infinity));
-  if (Number.isFinite(oldest)) bits.push(`oldest ${fmtDate(oldest)}`);
-  $('outbox-detail').textContent = bits.join(' · ');
-  show($('btn-outbox-confirm'), st.unconfirmed.length > 0);
 }
 
 // minimal ephemeral toast (no dependency on the cue system)
@@ -1973,15 +1755,11 @@ function wireEvents() {
 
   $('btn-export').addEventListener('click', exportJSON);
   $('btn-summary-export').addEventListener('click', exportJSON);
-  $('btn-summary-send').addEventListener('click', () => sendToJanaiHealth(pendingWorkouts()));
-  $('btn-send-pending').addEventListener('click', () => sendToJanaiHealth(pendingWorkouts()));
-  $('btn-outbox-send').addEventListener('click', () => sendToJanaiHealth(pendingWorkouts()));
-  $('btn-outbox-confirm').addEventListener('click', confirmReceived);
   // another tab/window of the app wrote history or the outbox
   window.addEventListener('storage', (e) => {
     if (e.key && !e.key.startsWith('janai.formcoach.')) return;
     refreshAll();
-    refreshPendingBanner();
+    refreshSyncUI();
   });
   $('btn-summary-done').addEventListener('click', () => { showScreen(null); setTab('home'); });
 
@@ -1989,7 +1767,6 @@ function wireEvents() {
   $('btn-settings-close').addEventListener('click', closeSettings);
   wireSettings();
   wireCloud();
-  wireSync();
 
   const inst = $('btn-install');
   if (inst) inst.addEventListener('click', async () => {
@@ -2116,11 +1893,10 @@ function boot() {
   // preload the pose model in the background; failure is non-fatal
   initPose();
 
-  // signed in? pull/push in the background — offline or signed-out is a no-op
-  cloudSync('boot');
-  // paired? push the outbox, then pull-merge (re-hydrates a wiped store)
-  refreshPendingBanner();
-  autoSync('boot');
+  // signed in? drain the outbox (incl. any first-sign-in backfill), then
+  // pull-merge to rehydrate a wiped store — offline or signed-out is a no-op
+  refreshSyncUI();
+  cloudAutoSync('boot');
 
   window.__formCoachReady = true;
   document.body.dataset.ready = 'true';

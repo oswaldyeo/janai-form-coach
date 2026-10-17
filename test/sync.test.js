@@ -162,14 +162,14 @@ test('pullAll follows cursor pages and stops on no-more or a stuck cursor', asyn
   assert.equal(stuck.cursor, 0);
 });
 
-test('syncStatus labels: not paired / offline / syncing / pending N / synced / re-pair', () => {
-  assert.deepEqual(syncStatus({ paired: false, pending: 3 }), { state: 'unpaired', label: 'Not paired' });
-  assert.equal(syncStatus({ paired: true, online: false, pending: 2 }).label, 'Offline · 2 pending');
-  assert.equal(syncStatus({ paired: true, online: false }).label, 'Offline');
-  assert.equal(syncStatus({ paired: true, busy: true, pending: 1 }).state, 'syncing');
-  assert.equal(syncStatus({ paired: true, pending: 4 }).label, 'Pending 4');
-  assert.deepEqual(syncStatus({ paired: true }), { state: 'synced', label: 'Synced ✓' });
-  assert.equal(syncStatus({ paired: true, authFailed: true, pending: 1 }).state, 'error');
+test('syncStatus labels: signed out / offline / syncing / pending N / synced / sign in again', () => {
+  assert.deepEqual(syncStatus({ signedIn: false, pending: 3 }), { state: 'signedout', label: 'Signed out' });
+  assert.equal(syncStatus({ signedIn: true, online: false, pending: 2 }).label, 'Offline · 2 pending');
+  assert.equal(syncStatus({ signedIn: true, online: false }).label, 'Offline');
+  assert.equal(syncStatus({ signedIn: true, busy: true, pending: 1 }).state, 'syncing');
+  assert.equal(syncStatus({ signedIn: true, pending: 4 }).label, 'Pending 4');
+  assert.deepEqual(syncStatus({ signedIn: true }), { state: 'synced', label: 'Synced ✓' });
+  assert.equal(syncStatus({ signedIn: true, authFailed: true, pending: 1 }).state, 'error');
 });
 
 test('normalizeSyncUrl: https only (http for localhost), adds scheme, trims slashes', () => {

@@ -4,9 +4,10 @@
 // so signup returns a session directly); data is one PostgREST table
 // (formcoach_workouts) with owner-only row-level security, so the publishable
 // key below is safe to ship: without a signed-in user's JWT it can read and
-// write nothing. Local storage remains the source of truth — the cloud is a
-// mirror keyed by (user_id, workout id), merged with mergeWorkouts() so sync
-// is idempotent and never clobbers on-device history.
+// write nothing. This is THE auto-sync transport (see engine/autosync.js):
+// finished/edited workouts are upserted from the outbox keyed by
+// (user_id, workout id), and boot pulls + merges so localStorage is a cache
+// that can always be rehydrated.
 
 export const CLOUD = {
   url: 'https://pwuicyuuxrvemvrtmjia.supabase.co',
@@ -84,75 +85,110 @@ export function mapAuthError(err) {
 }
 
 // ── network (thin wrappers; errors surface as thrown Error with message) ─────
+// makeCloudClient takes an injected fetch so the auto-sync engine can be
+// tested with a mocked network; the module-level exports use the real fetch.
 
-async function call(path, { method = 'GET', jwt = null, body = undefined, headers = {} } = {}) {
-  const res = await fetch(`${CLOUD.url}${path}`, {
-    method,
-    headers: {
-      apikey: CLOUD.key,
-      Authorization: `Bearer ${jwt || CLOUD.key}`,
-      'Content-Type': 'application/json',
-      ...headers,
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  const text = await res.text();
-  let json = null;
-  try { json = text ? JSON.parse(text) : null; } catch { /* non-JSON body */ }
-  if (!res.ok) {
-    const msg = (json && (json.msg || json.message || json.error_description || json.error)) || `HTTP ${res.status}`;
-    const err = new Error(msg);
-    err.code = (json && json.error_code) || null; // GoTrue machine-readable code
-    err.status = res.status;
-    throw err;
+const PULL_PAGE = 200;
+const KEEPALIVE_MAX = 60000; // browsers cap keepalive bodies at 64 KB
+
+export function makeCloudClient({ fetchImpl = (...a) => fetch(...a), config = CLOUD } = {}) {
+  async function call(path, { method = 'GET', jwt = null, body = undefined, headers = {} } = {}) {
+    const payload = body === undefined ? undefined : JSON.stringify(body);
+    const init = {
+      method,
+      headers: {
+        apikey: config.key,
+        Authorization: `Bearer ${jwt || config.key}`,
+        'Content-Type': 'application/json',
+        ...headers,
+      },
+      body: payload,
+    };
+    // lets a just-finished workout's upsert outlive a backgrounded/closed tab
+    if (payload && method !== 'GET' && payload.length < KEEPALIVE_MAX) init.keepalive = true;
+    const res = await fetchImpl(`${config.url}${path}`, init);
+    const text = await res.text();
+    let json = null;
+    try { json = text ? JSON.parse(text) : null; } catch { /* non-JSON body */ }
+    if (!res.ok) {
+      const msg = (json && (json.msg || json.message || json.error_description || json.error)) || `HTTP ${res.status}`;
+      const err = new Error(msg);
+      err.code = (json && (json.error_code || json.code)) || null; // GoTrue / PostgREST code
+      err.status = res.status;
+      throw err;
+    }
+    return json;
   }
-  return json;
+
+  return {
+    /**
+     * Create an account with email + password. The DB auto-confirms new signups
+     * (trigger `formcoach_autoconfirm` on auth.users), so a genuinely new email
+     * returns a session directly. An already-registered email returns a
+     * sessionless obfuscated user (GoTrue anti-enumeration) — callers treat null
+     * as "this email probably has an account" and retry sign-in.
+     */
+    async signUp(email, password) {
+      const body = await call('/auth/v1/signup', { method: 'POST', body: { email, password } });
+      return sessionFromTokenResponse(body); // null ⇒ confirmation pending
+    },
+
+    /** Email + password sign-in (1Password-friendly). */
+    async signInWithPassword(email, password) {
+      const body = await call('/auth/v1/token?grant_type=password', { method: 'POST', body: { email, password } });
+      const session = sessionFromTokenResponse(body);
+      if (!session) throw new Error('Sign-in failed.');
+      return session;
+    },
+
+    /** Trade a refresh token for a fresh session. */
+    async refreshSession(refresh_token) {
+      const body = await call('/auth/v1/token?grant_type=refresh_token', { method: 'POST', body: { refresh_token } });
+      const session = sessionFromTokenResponse(body);
+      if (!session) throw new Error('Session refresh failed — sign in again.');
+      return session;
+    },
+
+    /** Pull every cloud workout for the signed-in user (RLS scopes to owner), paged. */
+    async pullWorkouts(session, { pageSize = PULL_PAGE, maxPages = 50 } = {}) {
+      const out = [];
+      for (let page = 0; page < maxPages; page += 1) {
+        const rows = await call(
+          `/rest/v1/${config.table}?select=data&order=started_at_ms.desc.nullslast,id.asc&limit=${pageSize}&offset=${page * pageSize}`,
+          { jwt: session.access_token }
+        );
+        const list = Array.isArray(rows) ? rows : [];
+        out.push(...workoutsFromRows(list));
+        if (list.length < pageSize) break;
+      }
+      return out;
+    },
+
+    /**
+     * Upsert workouts under the signed-in user, deduped by id (last copy wins —
+     * Postgres rejects an ON CONFLICT batch that touches one row twice).
+     * Idempotent: re-sending a workout just rewrites its row.
+     * @returns {Promise<{accepted:string[], rejected:{id:string}[]}>}
+     */
+    async pushWorkouts(session, workouts) {
+      const byId = new Map();
+      for (const w of workouts || []) if (w && typeof w.id === 'string') byId.set(w.id, w);
+      const list = [...byId.values()];
+      if (!list.length) return { accepted: [], rejected: [] };
+      await call(`/rest/v1/${config.table}?on_conflict=user_id,id`, {
+        method: 'POST',
+        jwt: session.access_token,
+        headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: list.map(rowFromWorkout),
+      });
+      return { accepted: list.map((w) => w.id), rejected: [] };
+    },
+  };
 }
 
-/**
- * Create an account with email + password. The DB auto-confirms new signups
- * (trigger `formcoach_autoconfirm` on auth.users), so a genuinely new email
- * returns a session directly. An already-registered email returns a sessionless
- * obfuscated user (GoTrue anti-enumeration) — callers should treat null as
- * "this email probably has an account" and retry sign-in.
- */
-export async function signUp(email, password) {
-  const body = await call('/auth/v1/signup', { method: 'POST', body: { email, password } });
-  return sessionFromTokenResponse(body); // null ⇒ confirmation pending
-}
-
-/** Email + password sign-in (1Password-friendly). */
-export async function signInWithPassword(email, password) {
-  const body = await call('/auth/v1/token?grant_type=password', { method: 'POST', body: { email, password } });
-  const session = sessionFromTokenResponse(body);
-  if (!session) throw new Error('Sign-in failed.');
-  return session;
-}
-
-/** Trade a refresh token for a fresh session. */
-export async function refreshSession(refresh_token) {
-  const body = await call('/auth/v1/token?grant_type=refresh_token', { method: 'POST', body: { refresh_token } });
-  const session = sessionFromTokenResponse(body);
-  if (!session) throw new Error('Session refresh failed — sign in again.');
-  return session;
-}
-
-/** Pull every cloud workout for the signed-in user (RLS scopes to owner). */
-export async function pullWorkouts(session) {
-  const rows = await call(
-    `/rest/v1/${CLOUD.table}?select=data&order=started_at_ms.desc.nullslast&limit=300`,
-    { jwt: session.access_token }
-  );
-  return workoutsFromRows(rows);
-}
-
-/** Upsert the given workouts under the signed-in user. Idempotent. */
-export function pushWorkouts(session, workouts) {
-  if (!workouts.length) return Promise.resolve(null);
-  return call(`/rest/v1/${CLOUD.table}?on_conflict=user_id,id`, {
-    method: 'POST',
-    jwt: session.access_token,
-    headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-    body: workouts.map(rowFromWorkout),
-  });
-}
+const defaultClient = makeCloudClient();
+export const signUp = (email, password) => defaultClient.signUp(email, password);
+export const signInWithPassword = (email, password) => defaultClient.signInWithPassword(email, password);
+export const refreshSession = (refreshToken) => defaultClient.refreshSession(refreshToken);
+export const pullWorkouts = (session, opts) => defaultClient.pullWorkouts(session, opts);
+export const pushWorkouts = (session, workouts) => defaultClient.pushWorkouts(session, workouts);

@@ -26,7 +26,10 @@ const WORKOUTS_CORRUPT_KEY = 'janai.formcoach.workouts.v2.corrupt';
 // Cloud auth session (Supabase GoTrue tokens). Workouts themselves are never
 // stored here — only the signed-in identity that scopes cloud sync.
 const CLOUD_SESSION_KEY = 'janai.formcoach.cloud.v1';
-// Janai auto-sync pairing: { url, token, accountId, cursor, lastSyncMs, ... }.
+// Per-account record of the one-time sign-in backfill: { [userId]: epochMs }.
+// Kept apart from the session so signing out and back in doesn't re-run it.
+const CLOUD_BACKFILL_KEY = 'janai.formcoach.cloud.backfill.v1';
+// DORMANT Cloudflare Worker pairing: { url, token, accountId, cursor, lastSyncMs, ... }.
 // The token is shown to the user once at signup and lives only here after that.
 const SYNC_KEY = 'janai.formcoach.sync.v1';
 
@@ -444,7 +447,19 @@ export function clearCloudSession() {
   return removeItem(CLOUD_SESSION_KEY);
 }
 
-// ── Janai auto-sync pairing ──────────────────────────────────────────────────
+export function isCloudBackfilled(userId) {
+  if (!userId) return false;
+  const m = safeParse(getItem(CLOUD_BACKFILL_KEY), {});
+  return !!(m && typeof m === 'object' && m[userId]);
+}
+
+export function markCloudBackfilled(userId, now = Date.now) {
+  if (!userId) return false;
+  const m = safeParse(getItem(CLOUD_BACKFILL_KEY), {});
+  return setItem(CLOUD_BACKFILL_KEY, JSON.stringify({ ...(m && typeof m === 'object' ? m : {}), [userId]: now() }));
+}
+
+// ── DORMANT Cloudflare Worker pairing (no longer read by the app) ──────────────────────────────────────────────────
 
 export function loadSyncConfig() {
   const s = safeParse(getItem(SYNC_KEY), null);
