@@ -392,6 +392,13 @@ button.small { min-height: 40px; padding: 8px 12px; font-size: 13px; border-radi
 .check-btn.pop { animation: check-pop .3s cubic-bezier(.34, 1.56, .64, 1); }
 @keyframes check-pop { 0% { transform: scale(.8); } 55% { transform: scale(1.12); } 100% { transform: scale(1); } }
 .prev-line { margin: 6px 0 8px; }
+/* per-exercise recall — always visible so missing history is obvious */
+.last-session { margin: 6px 0 8px; padding: 6px 10px; border-radius: 8px; background: var(--panel-2); border-left: 3px solid var(--mint); font-size: 12px; color: var(--muted-2); }
+.last-session b { color: var(--ink); }
+.last-session .ls-label { font-weight: 700; text-transform: uppercase; letter-spacing: .04em; font-size: 10px; color: var(--muted); margin-right: 4px; }
+.last-session.none { border-left-color: var(--line); }
+.last-session.warn { border-left-color: var(--warn); }
+.last-session.warn .ls-label { color: var(--warn); }
 
 .set-head, .set-row { display: grid; grid-template-columns: 44px 1fr 52px 42px 46px; gap: 6px; align-items: center; }
 .set-head { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; padding: 4px 0; }
@@ -539,3 +546,12 @@ button.small { min-height: 40px; padding: 8px 12px; font-size: 13px; border-radi
 }
 .lift-link:active { color: var(--mint); }
 .pick-progress { white-space: nowrap; }
+
+/* storage write failures — pinned above everything, never silent */
+.storage-alert { position: sticky; top: 0; z-index: 20; margin: 0; padding: 10px 14px; background: #4a1218; color: #ffd7dc; border-bottom: 1px solid var(--bad); font-size: 13px; font-weight: 600; }
+
+/* undelivered-workout outbox on Home */
+.outbox-card { border: 1px solid var(--warn); background: #241c0e; }
+.outbox-head { display: flex; align-items: baseline; gap: 10px; color: var(--warn); font-weight: 600; }
+.outbox-count { font-size: 34px; line-height: 1; color: var(--warn); }
+.outbox-card .muted { margin: 6px 0 10px; }

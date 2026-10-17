@@ -162,8 +162,16 @@ function exerciseSessions(history, exerciseId) {
     .sort((a, b) => (b.startedAtMs || 0) - (a.startedAtMs || 0))
     .flatMap((w) => (w.exercises || [])
       .filter((ex) => ex.exerciseId === exerciseId)
-      .map((ex) => (ex.sets || []).filter((s) => s.completed)))
+      .map((ex) => (ex.sets || []).filter((s) => s.completed).map(numericSet)))
     .filter((sets) => sets.length);
+}
+
+// History is raw JSON (cloud rows / imports may hold "60" not 60); the
+// Number.isFinite filters below would otherwise drop those sets entirely and
+// fall back to the baseline routine's loads.
+function numericSet(s) {
+  const n = (v) => (v == null || v === '' ? v : Number(v));
+  return { ...s, weight: n(s.weight), reps: n(s.reps), rpe: n(s.rpe) };
 }
 
 function didLoadJump(sessions) {

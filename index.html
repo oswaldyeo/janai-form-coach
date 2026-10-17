@@ -34,11 +34,22 @@
     <canvas id="overlay"></canvas>
   </section>
 
+  <div id="storage-alert" class="storage-alert hidden" role="alert"></div>
+
   <main id="main">
     <!-- ══ HOME TAB ══════════════════════════════════════════════════════ -->
     <section id="tab-home" class="tab">
       <div class="home-active hidden" id="home-active">
         <button class="resume-btn hidden" id="btn-resume-workout">Resume active workout <span>→</span></button>
+      </div>
+
+      <div class="card outbox-card hidden" id="outbox-card" role="status" aria-live="polite">
+        <div class="outbox-head"><b class="outbox-count" id="outbox-count">0</b><span id="outbox-label">workouts not delivered to Janai Health</span></div>
+        <div class="muted tiny" id="outbox-detail"></div>
+        <div class="row-2 outbox-actions">
+          <button class="primary" id="btn-outbox-send">Send now 🏋️</button>
+          <button class="ghost hidden" id="btn-outbox-confirm">Mark received</button>
+        </div>
       </div>
 
       <div class="card wod-card">
@@ -304,6 +315,6 @@
 
 </div>
 
-<script type="module" src="./js/app.js?v=28"></script>
+<script type="module" src="./js/app.js?v=29"></script>
 </body>
 </html>

@@ -1,0 +1,10 @@
+{
+  "name": "janai-form-coach",
+  "private": true,
+  "type": "module",
+  "description": "Local-first strength tracker PWA. No build step, no runtime dependencies.",
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\"",
+    "serve": "python3 -m http.server 8765"
+  }
+}

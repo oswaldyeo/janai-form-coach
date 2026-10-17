@@ -1,9 +1,11 @@
 // Browser-only persistence for v2: workouts, routines, settings, per-exercise
 // calibration, plus the retained v1 history key and a one-time migration guard.
-// Everything degrades gracefully if storage is unavailable (private mode, quota)
-// — the app keeps working, it just doesn't remember.
+// Storage being unavailable (private mode, quota) never crashes the app, but it
+// is never silent either: every write is read back, and failures are recorded
+// per key (storageHealth / onStorageError) so the UI can tell the lifter.
 
 import { applyMigration } from './engine/migration.js';
+import { completedSetCount } from './engine/workout.js';
 
 // v1 keys (retained; history.v1 is the rollback safety net and migration source)
 const HISTORY_KEY = 'janai.formcoach.history.v1';
@@ -19,6 +21,8 @@ const MIGRATION_KEY = 'janai.formcoach.migration';
 // Persisted so a failed/cancelled/offline share is never lost — retry re-shares
 // everything still pending, and the receiver dedupes by workout id.
 const OUTBOX_KEY = 'janai.formcoach.outbox.v1';
+// Raw copy of an unparseable workouts blob, kept before anything overwrites it.
+const WORKOUTS_CORRUPT_KEY = 'janai.formcoach.workouts.v2.corrupt';
 // Cloud auth session (Supabase GoTrue tokens). Workouts themselves are never
 // stored here — only the signed-in identity that scopes cloud sync.
 const CLOUD_SESSION_KEY = 'janai.formcoach.cloud.v1';
@@ -41,8 +45,67 @@ function safeParse(raw, fallback) {
   }
 }
 function getItem(key) { try { return localStorage.getItem(key); } catch { return null; } }
-function setItem(key, val) { try { localStorage.setItem(key, val); return true; } catch { return false; } }
-function removeItem(key) { try { localStorage.removeItem(key); return true; } catch { return false; } }
+
+// ── verified writes + error reporting ────────────────────────────────────────
+
+const writeErrors = new Map(); // key → { key, kind: 'quota'|'unavailable'|'verify'|'corrupt', message, at }
+const errorListeners = new Set();
+
+function classifyStorageError(err) {
+  const name = (err && err.name) || '';
+  if (name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED' || err?.code === 22 || err?.code === 1014) return 'quota';
+  return 'unavailable';
+}
+
+function emit(e) { for (const fn of errorListeners) { try { fn(e); } catch { /* listener bug ≠ storage bug */ } } }
+
+function reportWrite(key, err, kind) {
+  const e = { key, kind: kind || classifyStorageError(err), message: err && err.message ? String(err.message) : null, at: Date.now() };
+  writeErrors.set(key, e);
+  emit(e);
+  return false;
+}
+
+function clearWriteError(key) {
+  if (writeErrors.delete(key)) emit({ key, kind: 'recovered', at: Date.now() });
+}
+
+// A write only counts once it reads back byte-identical.
+function setItem(key, val) {
+  try { localStorage.setItem(key, val); } catch (err) { return reportWrite(key, err); }
+  let back;
+  try { back = localStorage.getItem(key); } catch (err) { return reportWrite(key, err, 'verify'); }
+  if (back !== val) return reportWrite(key, null, 'verify');
+  clearWriteError(key);
+  return true;
+}
+
+function removeItem(key) {
+  try { localStorage.removeItem(key); } catch (err) { return reportWrite(key, err); }
+  let back;
+  try { back = localStorage.getItem(key); } catch (err) { return reportWrite(key, err, 'verify'); }
+  if (back !== null) return reportWrite(key, null, 'verify');
+  clearWriteError(key);
+  return true;
+}
+
+/** Subscribe to write failures (and `kind: 'recovered'` once a key writes OK again). */
+export function onStorageError(fn) {
+  errorListeners.add(fn);
+  return () => errorListeners.delete(fn);
+}
+
+/** Current write health: ok=false while any key's latest write failed. */
+export function storageHealth() {
+  const errors = [...writeErrors.values()];
+  return { ok: errors.length === 0, errors };
+}
+
+export function _resetStorageStateForTests() {
+  writeErrors.clear();
+  errorListeners.clear();
+  lastActiveJson = '';
+}
 
 // ── v1 history (retained; read by migration + v1 export) ─────────────────────
 
@@ -81,16 +144,54 @@ export function loadWorkouts() {
   return Array.isArray(arr) ? arr : [];
 }
 
+// No silent cap: dropping the oldest workouts to make room is data loss. If
+// storage fills up the write fails loudly instead (see storageHealth).
 export function saveWorkouts(workouts) {
-  const arr = Array.isArray(workouts) ? workouts.slice(0, WORKOUT_LIMIT) : [];
+  const arr = Array.isArray(workouts) ? workouts : [];
   return setItem(WORKOUTS_KEY, JSON.stringify(arr));
 }
 
-/** Prepend one finished workout (newest-first). */
+// History about to be rewritten. An unreadable blob is stashed under
+// WORKOUTS_CORRUPT_KEY first, so a save can never replace it with [workout].
+function loadWorkoutsForWrite() {
+  const raw = getItem(WORKOUTS_KEY);
+  if (raw == null) return [];
+  const arr = safeParse(raw, null);
+  if (Array.isArray(arr)) return arr;
+  if (getItem(WORKOUTS_CORRUPT_KEY) !== raw && !setItem(WORKOUTS_CORRUPT_KEY, raw)) {
+    reportWrite(WORKOUTS_KEY, null, 'corrupt');
+    return null;
+  }
+  return [];
+}
+
+/** Insert one finished workout newest-first; replaces any copy with the same id. */
 export function saveWorkout(workout) {
-  const all = loadWorkouts();
-  all.unshift(workout);
-  return saveWorkouts(all);
+  if (!workout) return false;
+  const all = loadWorkoutsForWrite();
+  if (!all) return false;
+  const rest = all.filter((w) => !(w && workout.id && w.id === workout.id));
+  rest.unshift(workout);
+  return saveWorkouts(rest);
+}
+
+/**
+ * The finish transaction. Order matters: history is written and verified
+ * FIRST; only then is the workout queued for delivery and the crash-recovery
+ * copy removed. If the history write fails nothing else is touched, so the
+ * in-progress copy survives for a retry / export.
+ * @returns {{ok:true, queued:boolean, activeCleared:boolean} | {ok:false, stage:string, error:object|null}}
+ */
+export function commitFinishedWorkout(workout, now = Date.now) {
+  if (!workout || !workout.id) return { ok: false, stage: 'invalid', error: null };
+  if (!saveWorkout(workout)) return { ok: false, stage: 'history', error: writeErrors.get(WORKOUTS_KEY) || null };
+  if (!loadWorkouts().some((w) => w && w.id === workout.id)) {
+    return { ok: false, stage: 'verify', error: reportWrite(WORKOUTS_KEY, null, 'verify') || writeErrors.get(WORKOUTS_KEY) };
+  }
+  const queued = queueForDelivery(workout, now);
+  const active = loadActiveWorkout();
+  const activeCleared = active && active.id && active.id !== workout.id ? true : clearActiveWorkout();
+  return { ok: true, queued, activeCleared };
 }
 
 export function clearWorkouts() {
@@ -104,12 +205,56 @@ export function loadActiveWorkout() {
   return w && typeof w === 'object' && Array.isArray(w.exercises) ? w : null;
 }
 
-export function saveActiveWorkout(workout) {
-  return setItem(ACTIVE_KEY, JSON.stringify(workout));
+// Content of the last active write that actually landed (updatedAtMs excluded,
+// so the stamp alone never forces a rewrite).
+let lastActiveJson = '';
+
+function activeContent(workout) {
+  const { updatedAtMs, ...content } = workout; // eslint-disable-line no-unused-vars
+  return content;
+}
+
+export function saveActiveWorkout(workout, now = Date.now) {
+  if (!workout) return false;
+  const content = activeContent(workout);
+  if (!setItem(ACTIVE_KEY, JSON.stringify({ ...content, updatedAtMs: now() }))) return false;
+  lastActiveJson = JSON.stringify(content);
+  return true;
+}
+
+/**
+ * Crash-recovery write, called on every mutation and timer tick. Skips writes
+ * whose content already landed; a FAILED write is never remembered, so the
+ * next tick retries it.
+ */
+export function persistActiveWorkout(workout, now = Date.now) {
+  if (!workout) return false;
+  if (JSON.stringify(activeContent(workout)) === lastActiveJson) return true;
+  return saveActiveWorkout(workout, now);
 }
 
 export function clearActiveWorkout() {
-  return removeItem(ACTIVE_KEY);
+  const ok = removeItem(ACTIVE_KEY);
+  if (ok) lastActiveJson = '';
+  return ok;
+}
+
+/**
+ * Decide what to do with a stored active workout at launch. One whose id is
+ * already in history with at least as many completed sets is the leftover of
+ * a finish whose cleanup did not land — resuming it would re-log a finished
+ * session, so it is dropped. Anything with more logged work is resumed.
+ * @returns {{workout:object|null, reason:'none'|'already-saved'|'resume'|'saved-but-newer'}}
+ */
+export function resolveActiveOnBoot() {
+  const active = loadActiveWorkout();
+  if (!active) return { workout: null, reason: 'none' };
+  const saved = active.id ? loadWorkouts().find((w) => w && w.id === active.id) : null;
+  if (saved && completedSetCount(active) <= completedSetCount(saved)) {
+    clearActiveWorkout();
+    return { workout: null, reason: 'already-saved' };
+  }
+  return { workout: active, reason: saved ? 'saved-but-newer' : 'resume' };
 }
 
 // ── v2 routines (user-created; built-ins live in code) ───────────────────────
@@ -145,9 +290,13 @@ export function saveSettings(patch) {
 }
 
 // ── delivery outbox (pending → Janai Health) ─────────────────────────────────
-// An array of { id, endedAtMs, queuedAt }. Newest-first, capped. Delivery is a
-// manual share on iOS (no unauthenticated write endpoint), so we remember what
-// still needs sending across sessions and let the receiver dedupe.
+// An array of { id, endedAtMs, queuedAt, handedOffAt?, via?, attempts? }.
+// Newest-first, capped. Delivery is a manual share on iOS (no unauthenticated
+// write endpoint), so we remember what still needs sending across sessions and
+// let the receiver dedupe. A resolved share sheet / triggered download only
+// proves the file left the PWA — not that the Shortcut stored it — so those
+// entries stay in the outbox as "unconfirmed" until the lifter confirms
+// receipt (markDelivered).
 
 export function loadOutbox() {
   const arr = safeParse(getItem(OUTBOX_KEY), []);
@@ -158,15 +307,45 @@ function saveOutbox(arr) {
   return setItem(OUTBOX_KEY, JSON.stringify((arr || []).slice(0, WORKOUT_LIMIT)));
 }
 
-/** Queue a finished workout for delivery (idempotent by id). */
+/** Queue a finished workout for delivery (idempotent by id; keeps hand-off state). */
 export function queueForDelivery(workout, now = Date.now) {
   if (!workout || !workout.id) return false;
-  const out = loadOutbox().filter((e) => e.id !== workout.id);
-  out.unshift({ id: workout.id, endedAtMs: workout.endedAtMs ?? null, queuedAt: now() });
+  const all = loadOutbox();
+  const prev = all.find((e) => e.id === workout.id);
+  const out = all.filter((e) => e.id !== workout.id);
+  out.unshift(prev
+    ? { ...prev, endedAtMs: workout.endedAtMs ?? prev.endedAtMs ?? null }
+    : { id: workout.id, endedAtMs: workout.endedAtMs ?? null, queuedAt: now() });
   return saveOutbox(out);
 }
 
-/** Mark a set of workout ids as delivered (remove them from the outbox). */
+/** Record that these workouts were handed to the share sheet / downloaded. */
+export function markHandedOff(ids, via, now = Date.now) {
+  const set = new Set(ids || []);
+  const t = now();
+  return saveOutbox(loadOutbox().map((e) => (set.has(e.id)
+    ? { ...e, handedOffAt: t, via: via || null, attempts: (e.attempts || 0) + 1 }
+    : e)));
+}
+
+/**
+ * Outbox split for the UI. `unsent` were never handed off; `unconfirmed` were
+ * shared/downloaded but receipt is not confirmed; `orphaned` counts entries
+ * whose workout is no longer in local history (nothing left to send).
+ */
+export function outboxStatus() {
+  const out = loadOutbox();
+  const ids = new Set(loadWorkouts().filter(Boolean).map((w) => w.id));
+  const live = out.filter((e) => ids.has(e.id));
+  return {
+    unsent: live.filter((e) => !e.handedOffAt),
+    unconfirmed: live.filter((e) => e.handedOffAt),
+    orphaned: out.length - live.length,
+    total: live.length,
+  };
+}
+
+/** Mark a set of workout ids as received by Janai Health (remove them from the outbox). */
 export function markDelivered(ids) {
   const set = new Set(ids || []);
   return saveOutbox(loadOutbox().filter((e) => !set.has(e.id)));
@@ -200,7 +379,10 @@ export function ensureMigrated(now = Date.now) {
   const v1 = loadHistory();
   const existing = loadWorkouts();
   const { workouts, added, skipped } = applyMigration(existing, v1);
-  if (added > 0) saveWorkouts(workouts);
+  // never set the guard over a failed write — the next launch must retry
+  if (added > 0 && !saveWorkouts(workouts)) {
+    return { migrated: false, added: 0, skipped, error: writeErrors.get(WORKOUTS_KEY) || null };
+  }
   setItem(MIGRATION_KEY, JSON.stringify({ v1MigratedAt: now(), fromVersion: 1, added }));
   return { migrated: added > 0, added, skipped };
 }

@@ -6,7 +6,7 @@
 // are NOT guaranteed offline until they have been fetched once online. This is
 // documented honestly in the README.
 
-const SHELL_CACHE = 'formcoach-shell-v46'; // bump whenever any SHELL asset changes
+const SHELL_CACHE = 'formcoach-shell-v47'; // bump whenever any SHELL asset changes
 const RUNTIME_CACHE = 'formcoach-runtime-v2';
 
 const SHELL = [
@@ -14,7 +14,7 @@ const SHELL = [
   './index.html',
   './manifest.webmanifest',
   './css/styles.css',
-  './js/app.js?v=28',
+  './js/app.js?v=29',
   './js/pose.js',
   './js/storage.js',
   './js/interactions.js',
@@ -35,7 +35,7 @@ const SHELL = [
   './js/engine/backup.js',
   './js/engine/cloud.js',
   './js/engine/routines.js',
-  './js/engine/wod.js?v=24',
+  './js/engine/wod.js?v=25',
   './js/engine/howto.js',
   // New library images cache on first view; the small verified core stays offline-ready.
   './assets/howto/offline-core.json',

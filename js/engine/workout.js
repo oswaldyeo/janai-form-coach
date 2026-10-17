@@ -33,6 +33,9 @@ export function makeSet(partial = {}) {
     source,
     side: partial.side === 'L' || partial.side === 'R' ? partial.side : null,
     camera: partial.camera || null,
+    // UI-only: the lifter typed into this set. Lets the finish flow tell typed
+    // work apart from untouched pre-filled rows; stripped before saving.
+    ...(partial.edited ? { edited: true } : {}),
   };
 }
 
@@ -48,6 +51,7 @@ export function makeWorkout(partial = {}) {
     endedAtMs: partial.endedAtMs ?? null,
     note: partial.note || '',
     routineId: partial.routineId || null,
+    ...(partial.updatedAtMs != null ? { updatedAtMs: partial.updatedAtMs } : {}),
     exercises: (partial.exercises || []).map((e) => makeExerciseInstance(e.exerciseId, e.sets || [])),
   };
 }
@@ -164,16 +168,17 @@ export function exercisePRs(historyWorkouts, exerciseId) {
   for (const w of historyWorkouts || []) {
     for (const ex of w.exercises || []) {
       if (ex.exerciseId !== exerciseId) continue;
-      for (const s of ex.sets || []) {
+      for (const raw of ex.sets || []) {
+        const s = numericSet(raw);
         if (!s.completed || s.weight == null) continue;
         any = true;
         if (maxWeight == null || s.weight > maxWeight) maxWeight = s.weight;
         const orm = epley1RM(s.weight, s.reps);
         if (best1RM == null || orm > best1RM) best1RM = orm;
-        const vol = round2(s.weight * (s.reps || 0));
+        const vol = round2(s.weight * s.reps);
         if (maxVolume == null || vol > maxVolume) maxVolume = vol;
         const key = String(s.weight);
-        if (repsAtWeight[key] == null || (s.reps || 0) > repsAtWeight[key]) repsAtWeight[key] = s.reps || 0;
+        if (repsAtWeight[key] == null || s.reps > repsAtWeight[key]) repsAtWeight[key] = s.reps;
       }
     }
   }
@@ -183,22 +188,25 @@ export function exercisePRs(historyWorkouts, exerciseId) {
 
 /**
  * Which of a candidate workout's sets are new PRs vs prior history. Pure.
- * `priorHistory` should EXCLUDE the candidate workout. Returns an array of
+ * A copy of the candidate inside `priorHistory` (same id) is ignored, so a
+ * re-saved workout never competes with itself. Returns an array of
  * { exerciseId, setIndex, kinds:[...] } where kinds ⊆ {weight,e1rm,volume}.
  */
 export function newPRsInWorkout(candidate, priorHistory) {
   const out = [];
+  const prior = (priorHistory || []).filter((w) => !(w && candidate.id && w.id === candidate.id));
   for (const ex of candidate.exercises || []) {
-    const prev = exercisePRs(priorHistory, ex.exerciseId);
+    const prev = exercisePRs(prior, ex.exerciseId);
     // track intra-workout bests so a later set only PRs vs earlier same-workout sets too
     let runMaxW = prev ? prev.maxWeight : null;
     let runMax1 = prev ? prev.best1RM : null;
     let runMaxV = prev ? prev.maxVolume : null;
-    ex.sets.forEach((s, i) => {
+    (ex.sets || []).forEach((raw, i) => {
+      const s = numericSet(raw);
       if (!s.completed || s.weight == null) return;
       const kinds = [];
       const orm = epley1RM(s.weight, s.reps);
-      const vol = round2(s.weight * (s.reps || 0));
+      const vol = round2(s.weight * s.reps);
       if (runMaxW == null || s.weight > runMaxW) { kinds.push('weight'); runMaxW = s.weight; }
       if (runMax1 == null || orm > runMax1) { kinds.push('e1rm'); runMax1 = orm; }
       if (runMaxV == null || vol > runMaxV) { kinds.push('volume'); runMaxV = vol; }
@@ -241,10 +249,11 @@ export function exerciseHistorySeries(historyWorkouts, exerciseId, { bodyweightK
     let best1RM = null;
     let bestSet = null; // heaviest weighted set; ties broken by more reps
     for (const ex of insts) {
-      for (const s of ex.sets || []) {
+      for (const raw of ex.sets || []) {
+        const s = numericSet(raw);
         if (!s.completed) continue;
         sets += 1;
-        reps += Number(s.reps) || 0;
+        reps += s.reps;
         volume += setVolume(s, { bodyweightKg });
         if (s.weight == null) continue;
         const orm = epley1RM(s.weight, s.reps);
@@ -275,13 +284,33 @@ export function exerciseHistorySeries(historyWorkouts, exerciseId, { bodyweightK
   return points;
 }
 
+// ── recall (what did I do last time?) ────────────────────────────────────────
+
+/** When a workout happened, for recency: the later of its end and start. */
+export function workoutTimeMs(w) {
+  return Math.max(Number(w && w.endedAtMs) || 0, Number(w && w.startedAtMs) || 0);
+}
+
 /**
- * Completed sets from the most recent workout containing the exercise
- * (newest-first assumed). Powers the per-row "previous" placeholders: row i of
- * today's exercise mirrors set i of the last session, Hevy-style.
+ * History sorted newest-first by workoutTimeMs. Storage order is NOT trusted:
+ * cloud/import merges re-sort by startedAtMs, and a workout resumed after a
+ * crash keeps its original start, so array position ≠ recency. Stable for ties.
+ */
+export function byRecency(historyWorkouts) {
+  return (historyWorkouts || [])
+    .filter(Boolean)
+    .map((w, i) => ({ w, i, t: workoutTimeMs(w) }))
+    .sort((a, b) => b.t - a.t || a.i - b.i)
+    .map((x) => x.w);
+}
+
+/**
+ * Completed sets from the most recent workout containing the exercise. Powers
+ * the per-row "previous" placeholders: row i of today's exercise mirrors set i
+ * of the last session, Hevy-style.
  */
 export function previousSets(historyWorkouts, exerciseId) {
-  for (const w of historyWorkouts || []) {
+  for (const w of byRecency(historyWorkouts)) {
     for (const ex of w.exercises || []) {
       if (ex.exerciseId !== exerciseId) continue;
       const done = (ex.sets || []).filter((s) => s.completed);
@@ -294,7 +323,7 @@ export function previousSets(historyWorkouts, exerciseId) {
 /**
  * Fresh, UNCOMPLETED sets for an exercise about to be added to the active
  * workout, seeded from its most recent completed sets anywhere in history
- * (any routine — `previousSets` already scans newest-first across all workouts).
+ * (any routine — `previousSets` scans by recency across all workouts).
  * Preserves the shape a lifter would reuse — weight, reps, the cardio metrics,
  * set type and side — but strips completion and camera/rpe provenance so they
  * read as a clean plan for today. Falls back to a single blank set the first
@@ -338,14 +367,123 @@ export function seedWorkoutFromHistory(workout, historyWorkouts) {
  */
 export function pruneIncompleteSets(workout) {
   const exercises = (workout.exercises || [])
-    .map((ex) => ({ ...ex, sets: (ex.sets || []).filter((s) => s.completed) }))
+    .map((ex) => ({ ...ex, sets: (ex.sets || []).filter((s) => s.completed).map(stripEdited) }))
     .filter((ex) => ex.sets.length > 0);
-  return { ...workout, exercises };
+  const { updatedAtMs, ...rest } = workout; // eslint-disable-line no-unused-vars
+  return { ...rest, exercises };
 }
 
-/** Most-recent completed set for an exercise across history (newest-first assumed). */
+function stripEdited(s) {
+  if (!('edited' in s)) return s;
+  const { edited, ...rest } = s; // eslint-disable-line no-unused-vars
+  return rest;
+}
+
+function hasSetData(s) {
+  return s.weight != null || (s.reps || 0) > 0 || (s.durationSec || 0) > 0
+    || (s.distanceM || 0) > 0 || (s.steps || 0) > 0 || (s.floors || 0) > 0;
+}
+
+/**
+ * What the finish-time prune would drop. `edited` = unticked sets the lifter
+ * typed into (real work that was probably just not ticked); `seededOnly` =
+ * unticked rows that still hold only pre-filled numbers (safe to drop).
+ */
+export function uncheckedSetsSummary(workout) {
+  const edited = [];
+  let seededOnly = 0;
+  (workout.exercises || []).forEach((ex, ei) => (ex.sets || []).forEach((s, si) => {
+    if (s.completed) return;
+    if (s.edited && hasSetData(s)) edited.push({ ei, si, exerciseId: ex.exerciseId });
+    else if (hasSetData(s)) seededOnly += 1;
+  }));
+  return { edited, seededOnly };
+}
+
+/** Tick every typed-into, unticked set (the "keep my typed sets" finish choice). */
+export function completeEditedSets(workout) {
+  return {
+    ...workout,
+    exercises: (workout.exercises || []).map((ex) => ({
+      ...ex,
+      sets: (ex.sets || []).map((s) => (!s.completed && s.edited && hasSetData(s) ? { ...s, completed: true } : s)),
+    })),
+  };
+}
+
+/** True when abandoning this workout would lose something the lifter did. */
+export function hasLoggedWork(workout) {
+  if (!workout) return false;
+  return completedSetCount(workout) > 0 || uncheckedSetsSummary(workout).edited.length > 0;
+}
+
+/**
+ * The per-exercise "last session" line: most recent workout (by recency) with
+ * completed sets of this exercise, its top working set (warm-ups excluded
+ * unless that is all there is; heaviest, ties → more reps), set count, and
+ * calendar days ago in local time. null when the exercise has no history.
+ */
+export function lastSessionSummary(historyWorkouts, exerciseId, nowMs = Date.now()) {
+  for (const w of byRecency(historyWorkouts)) {
+    const done = (w.exercises || [])
+      .filter((ex) => ex.exerciseId === exerciseId)
+      .flatMap((ex) => (ex.sets || []).map(numericSet).filter((s) => s.completed));
+    if (!done.length) continue;
+    const working = done.filter((s) => s.type !== 'warmup');
+    const pool = working.length ? working : done;
+    const top = pool.reduce((a, b) => {
+      const aw = a.weight ?? -Infinity;
+      const bw = b.weight ?? -Infinity;
+      return bw > aw || (bw === aw && b.reps > a.reps) ? b : a;
+    });
+    const atMs = workoutTimeMs(w);
+    return {
+      workoutId: w.id,
+      title: w.title || 'Workout',
+      atMs,
+      daysAgo: atMs ? calendarDaysBetween(atMs, nowMs) : null,
+      topSet: { weight: top.weight, reps: top.reps },
+      top,
+      sets: done.length,
+    };
+  }
+  return null;
+}
+
+function calendarDaysBetween(aMs, bMs) {
+  const a = new Date(aMs); a.setHours(0, 0, 0, 0);
+  const b = new Date(bMs); b.setHours(0, 0, 0, 0);
+  return Math.round((b - a) / 86400000);
+}
+
+/**
+ * Other exercise ids in history that are the same movement under a different
+ * catalog entry (e.g. "Bench press (dumbbell)" vs "Bench Press (Barbell)"):
+ * same name once the equipment parenthetical and punctuation are dropped.
+ * Newest first. Lets the UI say "logged as X" instead of a bare "first time".
+ */
+export function relatedHistoryIds(historyWorkouts, exerciseId, nameOf) {
+  const base = movementKey(nameOf(exerciseId));
+  if (!base) return [];
+  const out = [];
+  for (const w of byRecency(historyWorkouts)) {
+    for (const ex of w.exercises || []) {
+      if (ex.exerciseId === exerciseId || out.includes(ex.exerciseId)) continue;
+      if (!(ex.sets || []).some((s) => s.completed)) continue;
+      if (movementKey(nameOf(ex.exerciseId)) === base) out.push(ex.exerciseId);
+    }
+  }
+  return out;
+}
+
+function movementKey(name) {
+  if (!name) return '';
+  return String(name).toLowerCase().replace(/\([^)]*\)/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+/** Most-recent completed set for an exercise across history (by recency). */
 export function lastPerformance(historyWorkouts, exerciseId) {
-  for (const w of historyWorkouts || []) {
+  for (const w of byRecency(historyWorkouts)) {
     for (const ex of w.exercises || []) {
       if (ex.exerciseId !== exerciseId) continue;
       const done = (ex.sets || []).filter((s) => s.completed);
@@ -431,4 +569,11 @@ function clampRpe(v) {
   return Math.max(1, Math.min(10, Math.round(n * 2) / 2)); // 1..10, half steps
 }
 function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
+
+// Stored history is raw JSON (cloud rows / imported backups are not passed
+// through makeSet), so numbers may arrive as strings. Compare numbers only.
+function numericSet(s) {
+  const w = s.weight == null || s.weight === '' ? null : Number(s.weight);
+  return { ...s, weight: Number.isFinite(w) ? w : null, reps: Number(s.reps) || 0 };
+}
 function round2(v) { return Math.round(v * 100) / 100; }

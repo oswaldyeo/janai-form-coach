@@ -20,6 +20,7 @@ import {
   workoutVolume, completedSetCount, totalReps, workoutDurationSec,
   summarize, newPRsInWorkout, previousSets, seedSetsFromHistory, seedWorkoutFromHistory, pruneIncompleteSets,
   nextLoadSuggestion, cadenceScore, SET_TYPES, exercisePRs, exerciseHistorySeries, epley1RM,
+  byRecency, lastSessionSummary, relatedHistoryIds, uncheckedSetsSummary, completeEditedSets, hasLoggedWork,
 } from './engine/workout.js';
 import { lineChartSVG } from './engine/chart.js';
 import { adjacentTab } from './engine/gestures.js';
@@ -27,13 +28,13 @@ import { attachRipple, attachSwipeNav, dragSession, clearSwipeArtifacts } from '
 import {
   BUILTIN_ROUTINES, OCCAM_ROUTINE, OS_FULL_BODY_ROUTINE, routineToWorkout, repeatWorkout, workoutToRoutine, makeRoutine,
 } from './engine/routines.js';
-import { generateWOD } from './engine/wod.js?v=24';
+import { generateWOD } from './engine/wod.js?v=25';
 import { createPoseLandmarker } from './pose.js';
 import {
-  loadWorkouts, saveWorkouts, saveWorkout, clearWorkouts, loadRoutines, saveRoutine, deleteRoutine,
+  loadWorkouts, saveWorkouts, clearWorkouts, loadRoutines, saveRoutine, deleteRoutine,
   loadSettings, saveSettings, loadCalibration, saveCalibration, ensureMigrated,
-  loadActiveWorkout, saveActiveWorkout, clearActiveWorkout,
-  queueForDelivery, markDelivered, pendingWorkouts, loadOutbox,
+  persistActiveWorkout, clearActiveWorkout, resolveActiveOnBoot, commitFinishedWorkout,
+  markDelivered, markHandedOff, pendingWorkouts, outboxStatus, storageHealth, onStorageError,
   loadHistory, loadCloudSession, saveCloudSession, clearCloudSession,
 } from './storage.js';
 import { exportBundle, parseBundle, mergeWorkouts } from './engine/backup.js';
@@ -126,6 +127,9 @@ function say(text) {
 // ROUTING — tabs + full-screen modes
 // ════════════════════════════════════════════════════════════════════════════
 function show(el, on) { if (el) el.classList.toggle('hidden', !on); }
+// Storage order is not recency order (see byRecency); every reader of
+// state.history (recall, PR badges, "repeat last") relies on newest-first.
+function reloadHistory() { state.history = byRecency(loadWorkouts()); }
 
 function inCoach() { return !!state.coach; }
 function inWorkoutScreen() { return !$('screen-workout').classList.contains('hidden'); }
@@ -252,12 +256,8 @@ function regenerateWOD() {
 
 function startWOD() {
   if (!state.wod) renderWOD();
-  state.workout = makeWorkout({
-    ...state.wod.workout,
-    id: newWorkoutId(),
-    startedAtMs: now(),
-  });
-  openWorkout();
+  const plan = state.wod.workout;
+  beginWorkout(() => makeWorkout({ ...plan, id: newWorkoutId(), startedAtMs: now() }));
 }
 
 function recentRow(w) {
@@ -370,32 +370,58 @@ function statTile(label, val) {
 // ════════════════════════════════════════════════════════════════════════════
 function newWorkoutId() { return `w-${now().toString(36)}-${Math.floor(performance.now())}`; }
 
-function startEmptyWorkout() {
-  state.workout = makeWorkout({ id: newWorkoutId(), title: 'Workout', startedAtMs: now() });
+// Every "start a workout" path funnels through here. Starting used to assign
+// state.workout unconditionally, and the next persist overwrote the stored
+// unfinished workout — its sets never reached history.
+function beginWorkout(build) {
+  if (state.workout && !settleUnfinishedWorkout()) return false;
+  state.workout = build();
   openWorkout();
+  return true;
+}
+
+// true = safe to start something new (nothing to lose, or it was saved).
+function settleUnfinishedWorkout() {
+  const cur = state.workout;
+  if (!hasLoggedWork(cur)) { discardActive(); state.workout = null; return true; }
+  const n = completedSetCount(cur) + uncheckedSetsSummary(cur).edited.length;
+  const ok = confirm(`You have an unfinished workout (“${cur.title}”, ${n} logged set${n === 1 ? '' : 's'}).\n\nOK = save it to history, then start the new one.\nCancel = go back to it.`);
+  if (!ok) { openWorkout(); return false; }
+  const finished = pruneIncompleteSets(completeEditedSets(cur));
+  finished.endedAtMs = cur.updatedAtMs || now();
+  const res = commitFinishedWorkout(finished, now);
+  if (!res.ok) { reportSaveFailure(res, finished); openWorkout(); return false; }
+  if (state.wTimer) { clearInterval(state.wTimer); state.wTimer = null; }
+  endRest();
+  state.workout = null;
+  afterHistoryWrite();
+  toast('Unfinished workout saved to history.');
+  return true;
+}
+
+function startEmptyWorkout() {
+  if (!beginWorkout(() => makeWorkout({ id: newWorkoutId(), title: 'Workout', startedAtMs: now() }))) return;
   // jump straight to the picker for the first exercise
   openPicker('workout');
 }
 
 function startOccam(dayKey) {
-  const w = routineToWorkout(OCCAM_ROUTINE, dayKey, { id: newWorkoutId(), startedAtMs: now() });
-  state.workout = seedWorkoutFromHistory(w, state.history);
-  openWorkout();
+  beginWorkout(() => seedWorkoutFromHistory(
+    routineToWorkout(OCCAM_ROUTINE, dayKey, { id: newWorkoutId(), startedAtMs: now() }), state.history));
 }
 
 function startRoutine(routineId, dayKey) {
   const routine = BUILTIN_ROUTINES.find((r) => r.id === routineId)
     || state.routines.find((r) => r.id === routineId);
   if (!routine) return;
-  const w = routineToWorkout(routine, dayKey, { id: newWorkoutId(), startedAtMs: now() });
-  state.workout = seedWorkoutFromHistory(w, state.history);
-  openWorkout();
+  beginWorkout(() => seedWorkoutFromHistory(
+    routineToWorkout(routine, dayKey, { id: newWorkoutId(), startedAtMs: now() }), state.history));
 }
 
 function startRepeatLast() {
   if (!state.history.length) return;
-  state.workout = repeatWorkout(state.history[0], { id: newWorkoutId(), startedAtMs: now() });
-  openWorkout();
+  const last = state.history[0];
+  beginWorkout(() => repeatWorkout(last, { id: newWorkoutId(), startedAtMs: now() }));
 }
 
 function openWorkout() {
@@ -408,16 +434,13 @@ function openWorkout() {
 
 // Persist the in-progress workout so a refresh / tab kill / crash mid-session
 // never loses logged sets. updateWorkoutHead is the funnel every mutation path
-// (and the 1 s timer) already runs through; the string compare skips no-op ticks.
-let lastPersisted = '';
+// (and the 1 s timer) already runs through. persistActiveWorkout skips content
+// that already landed and retries content that failed to.
 function persistActive() {
   if (!state.workout) return;
-  const json = JSON.stringify(state.workout);
-  if (json === lastPersisted) return;
-  lastPersisted = json;
-  saveActiveWorkout(state.workout);
+  persistActiveWorkout(state.workout, now);
 }
-function discardActive() { lastPersisted = ''; clearActiveWorkout(); }
+function discardActive() { clearActiveWorkout(); }
 
 function updateWorkoutHead() {
   if (!state.workout) return;
@@ -460,7 +483,7 @@ function renderWorkout() {
         <span>Add an exercise to start logging sets.</span>
       </div>`;
   $('btn-save-as-routine').disabled = empty;
-  $('btn-finish').disabled = completedSetCount(state.workout) === 0;
+  $('btn-finish').disabled = !hasLoggedWork(state.workout);
   const add = $('btn-add-exercise');
   add.className = empty ? 'primary wide' : 'ghost wide';
   add.textContent = empty ? '+ Add your first exercise' : '+ Add exercise';
@@ -471,7 +494,6 @@ function renderWorkout() {
 function exerciseCard(ex, ei) {
   const cat = getCatalogEntry(ex.exerciseId) || { name: ex.exerciseId, unilateral: false, loadType: 'external' };
   const prevSets = previousSets(state.history, ex.exerciseId);
-  const prevStr = prevSets.length ? summarizeTrackedSet(prevSets[0], cat) : 'first time';
   const cam = hasCamera(ex.exerciseId);
   const exp = isExperimentalCamera(ex.exerciseId);
   const camDot = cam ? `<span class="cam-dot ${confClass(cat)}" title="${esc(cat.camera.confidence)} confidence"></span>` : '';
@@ -492,7 +514,7 @@ function exerciseCard(ex, ei) {
       <div class="ex-title">${handle}<div>${camDot}<b>${esc(cat.name)}</b>${cat.unilateral ? ' <span class="badge">per side</span>' : ''}</div></div>
       <button class="ghost tiny-btn" data-rmex="${ei}" aria-label="Remove exercise">✕</button>
     </div>
-    <div class="muted tiny prev-line">Previous: ${esc(prevStr)}</div>
+    ${lastSessionLine(ex.exerciseId, cat)}
     <div class="set-head"><span>#</span><span class="metric-head">${metricHead}</span><span>type</span><span>RPE</span><span>✓</span></div>
     ${rows}
     <div class="ex-actions">
@@ -502,6 +524,30 @@ function exerciseCard(ex, ei) {
       ${coachBtn}
     </div>
   </div>`;
+}
+
+function agoText(days) {
+  if (days == null) return 'date unknown';
+  if (days <= 0) return 'today';
+  return days === 1 ? 'yesterday' : `${days} days ago`;
+}
+
+// Always shown per exercise, so a missing or wrong recall is obvious at a glance.
+function lastSessionLine(exerciseId, cat) {
+  const t = now();
+  const last = lastSessionSummary(state.history, exerciseId, t);
+  if (last) {
+    return `<div class="last-session" data-last-session="${esc(exerciseId)}" title="${esc(last.title)} · ${esc(fmtDate(last.atMs))}">
+      <span class="ls-label">Last session</span> ${esc(agoText(last.daysAgo))} · <b>${esc(summarizeTrackedSet(last.top, cat))}</b> · ${last.sets} set${last.sets === 1 ? '' : 's'}</div>`;
+  }
+  const related = relatedHistoryIds(state.history, exerciseId, (id) => (getCatalogEntry(id) || {}).name || null)[0];
+  if (related) {
+    const r = lastSessionSummary(state.history, related, t);
+    const rcat = getCatalogEntry(related) || cat;
+    return `<div class="last-session warn" data-last-session="${esc(exerciseId)}">
+      <span class="ls-label">No history for this exact exercise</span> — last logged as ${esc(catalogName(related))}: <b>${esc(summarizeTrackedSet(r.top, rcat))}</b>, ${esc(agoText(r.daysAgo))}</div>`;
+  }
+  return `<div class="last-session none" data-last-session="${esc(exerciseId)}"><span class="ls-label">Last session</span> none recorded — first time</div>`;
 }
 
 function summarizeTrackedSet(set, cat) {
@@ -551,8 +597,9 @@ function wireWorkoutEvents(host) {
     const [ei, si] = parseIdx(el.dataset.set);
     const key = el.dataset.metric;
     const value = el.value === '' ? (key === 'weight' ? null : 0) : Number(el.value);
-    state.workout = updateSet(state.workout, ei, si, { [key]: value });
+    state.workout = updateSet(state.workout, ei, si, { [key]: value, edited: true });
     updateWorkoutHead();
+    $('btn-finish').disabled = !hasLoggedWork(state.workout);
   }));
   host.querySelectorAll('[data-rpe]').forEach((el) => el.addEventListener('change', () => {
     const [ei, si] = parseIdx(el.dataset.rpe);
@@ -922,31 +969,79 @@ function endRest() {
 // ════════════════════════════════════════════════════════════════════════════
 function finishWorkout() {
   if (!state.workout) return;
-  if (!completedSetCount(state.workout)) {
+  let w = state.workout;
+  // Sets the lifter TYPED but did not tick are real work, and every pre-filled
+  // row also "has data" — so the old "N unchecked sets will be discarded"
+  // prompt fired on almost every finish and was easy to OK through. Ask about
+  // typed sets specifically; untouched pre-filled rows are dropped quietly.
+  const { edited } = uncheckedSetsSummary(w);
+  if (edited.length) {
+    const n = edited.length;
+    const keep = confirm(`${n} set${n === 1 ? '' : 's'} you typed ${n === 1 ? 'is' : 'are'} not ticked ✓.\n\nOK = save ${n === 1 ? 'it' : 'them'} as completed.\nCancel = go back and review.`);
+    if (!keep) return;
+    w = completeEditedSets(w);
+    state.workout = w;
+  }
+  if (!completedSetCount(w)) {
     if (confirm('No completed sets — discard this workout?')) cancelWorkout();
     return;
   }
-  // uncompleted-but-typed sets would be silently lost by the prune — ask first
-  const droppedWithData = state.workout.exercises
-    .flatMap((ex) => ex.sets)
-    .filter((s) => !s.completed && (
-      s.weight != null || (s.reps || 0) > 0 || (s.durationSec || 0) > 0 ||
-      (s.distanceM || 0) > 0 || (s.steps || 0) > 0 || (s.floors || 0) > 0
-    )).length;
-  if (droppedWithData && !confirm(`${droppedWithData} unchecked set${droppedWithData === 1 ? '' : 's'} will be discarded. Finish anyway?`)) return;
-  endRest();
-  if (state.wTimer) { clearInterval(state.wTimer); state.wTimer = null; }
-  const finished = pruneIncompleteSets(state.workout);
+  const finished = pruneIncompleteSets(w);
   finished.endedAtMs = now();
   const prs = newPRsInWorkout(finished, state.history);
-  if (!saveWorkout(finished)) alert('Could not save the workout — storage is unavailable. Export before closing.');
-  queueForDelivery(finished);      // remember to hand it to Janai Health
-  cloudSync('auto');               // fire-and-forget; offline just skips
-  discardActive();
-  state.history = loadWorkouts();
-  refreshPendingBanner();
-  showSummary(finished, prs);
+  const res = commitFinishedWorkout(finished, now);
+  if (!res.ok) {
+    // nothing was cleared: the workout stays open and crash-recoverable
+    reportSaveFailure(res, finished);
+    renderWorkout();
+    return;
+  }
+  endRest();
+  if (state.wTimer) { clearInterval(state.wTimer); state.wTimer = null; }
   state.workout = null;
+  cloudSync('auto');               // fire-and-forget; offline just skips
+  afterHistoryWrite();
+  showSummary(finished, prs);
+  if (!res.queued) toast('Saved — but it could not be added to the Janai Health outbox (storage full).');
+}
+
+function afterHistoryWrite() {
+  reloadHistory();
+  state.wod = null; // the cached plan was built from the old history
+  refreshPendingBanner();
+}
+
+function describeStorageError(err) {
+  if (!err) return 'storage did not confirm the write';
+  if (err.kind === 'quota') return 'this device’s storage for the app is full';
+  if (err.kind === 'verify') return 'storage accepted the write but did not keep it';
+  if (err.kind === 'corrupt') return 'existing history could not be read and was not overwritten';
+  return 'storage is unavailable (private browsing or disabled)';
+}
+
+function reportSaveFailure(res, workout) {
+  renderStorageAlert();
+  const msg = `Workout NOT saved — ${describeStorageError(res.error)}.\n\nIt is still open here and nothing was deleted.\n\nOK = download a copy of this workout now.`;
+  if (confirm(msg)) downloadJSON({ format: 'janai-form-coach-unsaved-workout', exportedAtMs: now(), workouts: [workout] }, `formcoach-unsaved-${workout.id}.json`);
+}
+
+function downloadJSON(doc, filename) {
+  const blob = new Blob([JSON.stringify(doc, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function renderStorageAlert() {
+  const el = $('storage-alert');
+  if (!el) return;
+  const h = storageHealth();
+  show(el, !h.ok);
+  if (h.ok) { el.textContent = ''; return; }
+  const worst = h.errors.find((e) => e.kind === 'quota') || h.errors[0];
+  el.textContent = `⚠ Not saving: ${describeStorageError(worst)}. Recent changes may be lost when the app closes — export your data (History → Export JSON) and free up space.`;
 }
 
 function cancelWorkout() {
@@ -1287,7 +1382,7 @@ async function cloudSync(reason = 'manual') {
     const cloud = await pullWorkouts(session);
     const local = loadWorkouts();
     const { workouts, added } = mergeWorkouts(local, cloud);
-    if (added) { saveWorkouts(workouts); state.history = loadWorkouts(); refreshAll(); }
+    if (added) { saveWorkouts(workouts); reloadHistory(); refreshAll(); }
     await pushWorkouts(session, workouts.length ? workouts : local);
     if (!sessionStillCurrent()) return;
     saveCloudSession({ ...session, lastSyncMs: now() });
@@ -1440,7 +1535,7 @@ function wireSettings() {
           if (r && typeof r.id === 'string' && !haveR.has(r.id)) { saveRoutine(r); routinesAdded += 1; }
         }
       }
-      state.history = loadWorkouts();
+      reloadHistory();
       state.routines = loadRoutines();
       refreshAll();
       const bits = [`${added} workout${added === 1 ? '' : 's'} added`, `${skipped} already here`];
@@ -1453,13 +1548,13 @@ function wireSettings() {
   });
   $('btn-reset-data').addEventListener('click', () => {
     if (confirm('Clear all v2 workout history? (v1 history is kept.)')) {
-      clearWorkouts(); state.history = loadWorkouts(); refreshAll();
+      clearWorkouts(); reloadHistory(); refreshAll();
     }
   });
 }
 
 function refreshAll() {
-  state.history = loadWorkouts();
+  reloadHistory();
   state.routines = loadRoutines();
   if (state.tab === 'home') renderHome();
   if (state.tab === 'history') renderHistory();
@@ -1511,9 +1606,11 @@ async function sendToJanaiHealth(workouts) {
   if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
       await navigator.share({ files: [file], title: 'Form Coach → Janai Health' });
-      markDelivered(ids);
+      // A resolved share only means the sheet closed with a target picked —
+      // not that the Shortcut stored the file. Stay visible until confirmed.
+      markHandedOff(ids, 'share', now);
       refreshPendingBanner();
-      toast('Sent to Janai Health. 🏋️');
+      toast('Shared. Tap “Mark received” once it shows up in Janai Health.');
       return;
     } catch (err) {
       if (err && err.name === 'AbortError') { toast('Send cancelled — still pending.'); return; }
@@ -1521,25 +1618,53 @@ async function sendToJanaiHealth(workouts) {
     }
   }
   // Fallback (no Web Share, e.g. desktop): download the same file. Os saves it
-  // into the iCloud Form Coach folder manually. Stays pending until confirmed…
-  // but we optimistically clear on a successful download to avoid nagging.
+  // into the iCloud Form Coach folder manually, so it stays pending (as
+  // "unconfirmed") until he marks it received.
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = fname;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  markDelivered(ids);
+  markHandedOff(ids, 'download', now);
   refreshPendingBanner();
-  toast('Saved — move it into the Form Coach iCloud folder.');
+  toast('Downloaded — move it into the Form Coach iCloud folder, then tap “Mark received”.');
 }
 
+function confirmReceived() {
+  const { unconfirmed } = outboxStatus();
+  if (!unconfirmed.length) return;
+  const n = unconfirmed.length;
+  if (!confirm(`Only confirm if you can see ${n === 1 ? 'this workout' : `these ${n} workouts`} in Janai Health.\n\nMark ${n} as received?`)) return;
+  markDelivered(unconfirmed.map((e) => e.id));
+  refreshPendingBanner();
+}
+
+// Undelivered workouts are shown on Home, not just behind a History button.
 function refreshPendingBanner() {
+  const st = outboxStatus();
+  const n = st.total;
   const btn = $('btn-send-pending');
-  if (!btn) return;
-  const n = loadOutbox().length;
-  btn.hidden = n === 0;
-  btn.textContent = n > 1 ? `Send ${n} pending 🏋️` : 'Send pending 🏋️';
+  if (btn) {
+    btn.hidden = n === 0;
+    btn.textContent = n > 1 ? `Send ${n} pending 🏋️` : 'Send pending 🏋️';
+  }
+  const card = $('outbox-card');
+  if (!card) return;
+  show(card, n > 0);
+  if (!n) return;
+  $('outbox-count').textContent = String(n);
+  $('outbox-label').textContent = n === 1 ? 'workout not delivered to Janai Health' : 'workouts not delivered to Janai Health';
+  const bits = [];
+  if (st.unsent.length) bits.push(`${st.unsent.length} never sent`);
+  if (st.unconfirmed.length) {
+    const lastAt = Math.max(...st.unconfirmed.map((e) => e.handedOffAt || 0));
+    bits.push(`${st.unconfirmed.length} shared, not confirmed (last ${fmtDate(lastAt)})`);
+  }
+  const oldest = Math.min(...[...st.unsent, ...st.unconfirmed].map((e) => e.endedAtMs || e.queuedAt || Infinity));
+  if (Number.isFinite(oldest)) bits.push(`oldest ${fmtDate(oldest)}`);
+  $('outbox-detail').textContent = bits.join(' · ');
+  show($('btn-outbox-confirm'), st.unconfirmed.length > 0);
 }
 
 // minimal ephemeral toast (no dependency on the cue system)
@@ -1621,6 +1746,14 @@ function wireEvents() {
   $('btn-summary-export').addEventListener('click', exportJSON);
   $('btn-summary-send').addEventListener('click', () => sendToJanaiHealth(pendingWorkouts()));
   $('btn-send-pending').addEventListener('click', () => sendToJanaiHealth(pendingWorkouts()));
+  $('btn-outbox-send').addEventListener('click', () => sendToJanaiHealth(pendingWorkouts()));
+  $('btn-outbox-confirm').addEventListener('click', confirmReceived);
+  // another tab/window of the app wrote history or the outbox
+  window.addEventListener('storage', (e) => {
+    if (e.key && !e.key.startsWith('janai.formcoach.')) return;
+    refreshAll();
+    refreshPendingBanner();
+  });
   $('btn-summary-done').addEventListener('click', () => { showScreen(null); setTab('home'); });
 
   $('btn-settings').addEventListener('click', openSettings);
@@ -1725,9 +1858,10 @@ function boot() {
   // Durable storage first — before any read, so history can't be evicted out
   // from under us on the next launch.
   requestPersistentStorage();
-  // one-time, idempotent v1 → v2 migration
+  onStorageError(() => renderStorageAlert());
+  // one-time, idempotent v1 → v2 migration (guard stays unset if the write fails)
   try { ensureMigrated(now); } catch (e) { console.warn('[app] migration skipped', e); }
-  state.history = loadWorkouts();
+  reloadHistory();
   state.routines = loadRoutines();
   state.settings = loadSettings();
 
@@ -1736,12 +1870,18 @@ function boot() {
   showScreen(null);
 
   // resume a workout interrupted by a refresh / tab kill / crash
-  const active = loadActiveWorkout();
+  const { workout: active, reason } = resolveActiveOnBoot();
+  if (reason === 'already-saved') setStatus('finished workout already in history');
   if (active) {
     state.workout = makeWorkout(active);
     openWorkout();
     setStatus('workout resumed');
+    const since = active.updatedAtMs || active.startedAtMs;
+    if (since && now() - since > 6 * 3600000) {
+      toast(`Resumed an unfinished workout from ${fmtDate(since)} — tap Finish to save it to history.`);
+    }
   }
+  renderStorageAlert();
 
   // preload the pose model in the background; failure is non-fatal
   initPose();
