@@ -421,8 +421,66 @@ export function routineToWorkout(routine, dayKey, { id = null, startedAtMs = nul
     title: day ? `${routine.name} · ${day.name}` : routine.name,
     startedAtMs,
     routineId: routine.id,
+    routineDayKey: day ? day.key : null,
     exercises,
   });
+}
+
+/**
+ * Exercises the lifter added to a routine-started workout that the routine
+ * day doesn't already have — the candidates for "Add … to this routine?".
+ * Pass the PRUNED (finished) workout so an added-but-never-done exercise is
+ * not offered. Empty when the workout didn't come from this routine. Pure.
+ */
+export function routineAdditions(workout, routine) {
+  if (!workout || !routine || workout.routineId !== routine.id || workout.routineDayKey == null) return [];
+  const day = (routine.days || []).find((d) => d.key === workout.routineDayKey);
+  if (!day) return [];
+  const known = new Set(day.exercises.map((e) => e.exerciseId));
+  const out = [];
+  for (const ex of workout.exercises || []) {
+    if (known.has(ex.exerciseId) || out.includes(ex.exerciseId)) continue;
+    if ((ex.sets || []).some((s) => s.completed)) out.push(ex.exerciseId);
+  }
+  return out;
+}
+
+/**
+ * Append `exerciseIds` to one routine day, templated from the workout's
+ * completed sets (the same per-set shape the built-ins use, so the next start
+ * seeds a row per set). Returns a NEW normalised routine; the input is
+ * untouched. Pure.
+ */
+export function addExercisesToRoutine(routine, dayKey, workout, exerciseIds) {
+  const additions = (exerciseIds || []).map((exerciseId) => {
+    const ex = (workout.exercises || []).find((e) => e.exerciseId === exerciseId);
+    const done = ex ? ex.sets.filter((s) => s.completed) : [];
+    return {
+      exerciseId,
+      targetRestSec: null,
+      sets: done.length ? done.map((s) => ({
+        weight: s.weight ?? null,
+        reps: s.reps || 0,
+        durationSec: s.durationSec ?? null,
+        type: s.type || 'normal',
+        side: s.side ?? null,
+      })) : null,
+    };
+  });
+  return makeRoutine({
+    ...routine,
+    days: (routine.days || []).map((d) => (d.key === dayKey
+      ? { ...d, exercises: [...d.exercises, ...additions] }
+      : d)),
+  });
+}
+
+/** "Add A, B and C to this routine?" — one prompt for every addition. */
+export function routineUpdatePrompt(names) {
+  const list = names.length > 1
+    ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+    : (names[0] || '');
+  return `Add ${list} to this routine?`;
 }
 
 /**

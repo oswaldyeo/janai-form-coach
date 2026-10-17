@@ -9,7 +9,7 @@
 import { getExercise } from './engine/exercises.js';
 import { getHowto } from './engine/howto.js';
 import {
-  CATALOG_LIST, getCatalogEntry, hasCamera, isExperimentalCamera, searchCatalog, MUSCLES, EQUIPMENT,
+  CATALOG_LIST, getCatalogEntry, hasCamera, isExperimentalCamera, searchCatalog, recentsFirst, MUSCLES, EQUIPMENT,
 } from './engine/catalog.js';
 import { RepEngine } from './engine/rep-engine.js';
 import { calibrate } from './engine/calibration.js';
@@ -18,7 +18,8 @@ import { enrichWorkoutForDelivery } from './engine/delivery.js';
 import {
   makeWorkout, addExercise, removeExercise, reorderExercise, addSet, removeSet, reorderSet, updateSet,
   workoutVolume, completedSetCount, totalReps, workoutDurationSec,
-  summarize, newPRsInWorkout, previousSets, seedSetsFromHistory, seedWorkoutFromHistory, pruneIncompleteSets,
+  summarize, newPRsInWorkout, previousSets, placeholderSetsFromHistory, seedWorkoutFromHistory, pruneIncompleteSets,
+  recentExerciseIds,
   nextLoadSuggestion, cadenceScore, SET_TYPES, exercisePRs, exerciseHistorySeries, epley1RM,
   byRecency, lastSessionSummary, relatedHistoryIds, uncheckedSetsSummary, completeEditedSets, hasLoggedWork,
 } from './engine/workout.js';
@@ -27,6 +28,7 @@ import { adjacentTab } from './engine/gestures.js';
 import { attachRipple, attachSwipeNav, dragSession, clearSwipeArtifacts } from './interactions.js';
 import {
   BUILTIN_ROUTINES, OCCAM_ROUTINE, OS_FULL_BODY_ROUTINE, routineToWorkout, repeatWorkout, workoutToRoutine, makeRoutine,
+  routineAdditions, addExercisesToRoutine, routineUpdatePrompt,
 } from './engine/routines.js';
 import { generateWOD } from './engine/wod.js?v=25';
 import { createPoseLandmarker } from './pose.js';
@@ -436,9 +438,14 @@ function startOccam(dayKey) {
     routineToWorkout(OCCAM_ROUTINE, dayKey, { id: newWorkoutId(), startedAtMs: now() }), state.history));
 }
 
+function findRoutine(routineId) {
+  return BUILTIN_ROUTINES.find((r) => r.id === routineId)
+    || state.routines.find((r) => r.id === routineId)
+    || null;
+}
+
 function startRoutine(routineId, dayKey) {
-  const routine = BUILTIN_ROUTINES.find((r) => r.id === routineId)
-    || state.routines.find((r) => r.id === routineId);
+  const routine = findRoutine(routineId);
   if (!routine) return;
   beginWorkout(() => seedWorkoutFromHistory(
     routineToWorkout(routine, dayKey, { id: newWorkoutId(), startedAtMs: now() }), state.history));
@@ -786,7 +793,10 @@ function renderPicker() {
   const host = $('picker-list');
   $('picker-count').textContent = `${results.length} exercise${results.length === 1 ? '' : 's'}`;
   const logged = loggedExerciseIds();
-  host.innerHTML = results.map((e) => {
+  // Recently-used lifts float to the top (newest first); the rest keep the
+  // catalog order. Search/filters already ran over the whole catalog.
+  const { recent, rest } = recentsFirst(results, recentExerciseIds(state.history));
+  const pickRow = (e) => {
     const badge = hasCamera(e)
       ? `<span class="badge cam ${confClass(e)}">📷 Coach</span>`
       : `<span class="badge manual">${esc(humanize(trackingType(e)))}</span>`;
@@ -805,7 +815,11 @@ function renderPicker() {
       ${progress}
       ${howto}
     </div>`;
-  }).join('') || pickerEmptyState(q);
+  };
+  const section = (label) => `<div class="label pick-section">${label}</div>`;
+  host.innerHTML = (recent.length
+    ? section('Recent') + recent.map(pickRow).join('') + (rest.length ? section('All exercises') + rest.map(pickRow).join('') : '')
+    : rest.map(pickRow).join('')) || pickerEmptyState(q);
   host.querySelectorAll('[data-pick]').forEach((b) => b.addEventListener('click', () => pickExercise(b.dataset.pick)));
   host.querySelectorAll('[data-howto]').forEach((b) => b.addEventListener('click', () => openHowto(b.dataset.howto)));
   host.querySelectorAll('[data-exdetail]').forEach((b) => b.addEventListener('click', () => openExerciseDetail(b.dataset.exdetail)));
@@ -865,11 +879,17 @@ function pickExercise(id) {
   // onPick callers (routine builder) own navigation — they either reopen the
   // picker for the next exercise or return to the tabs themselves.
   if (state.picker.onPick) { const cb = state.picker.onPick; cb(id); return; }
-  // Seed the new exercise from its last logged session (any routine) so the
-  // lifter starts from real numbers instead of a blank row.
-  state.workout = addExercise(state.workout, id, seedSetsFromHistory(state.history, id));
+  // Mid-workout add: one empty row per set of the last session (any routine),
+  // whose placeholders show those numbers and adopt them on ✓. Blank values
+  // keep untouched rows out of the finish flow's "typed data" discard check.
+  state.workout = addExercise(state.workout, id, placeholderSetsFromHistory(state.history, id));
   showScreen('screen-workout');
-  renderWorkout();
+  renderWorkout(); // also persists the active workout (crash-safe)
+  const card = $('workout-exercises').lastElementChild;
+  if (card) {
+    try { card.scrollIntoView({ block: 'center' }); } catch {}
+    card.classList.add('just-added');
+  }
 }
 
 // Close the picker: back to the active workout if there is one, else the tabs.
@@ -1023,6 +1043,9 @@ function finishWorkout() {
     renderWorkout();
     return;
   }
+  // only after the save is committed: offer to fold new exercises back into
+  // the routine day that started this workout (no routine edit on failed save)
+  offerRoutineUpdate(finished);
   endRest();
   if (state.wTimer) { clearInterval(state.wTimer); state.wTimer = null; }
   state.workout = null;
@@ -1069,6 +1092,26 @@ function renderStorageAlert() {
   if (h.ok) { el.textContent = ''; return; }
   const worst = h.errors.find((e) => e.kind === 'quota') || h.errors[0];
   el.textContent = `⚠ Not saving: ${describeStorageError(worst)}. Recent changes may be lost when the app closes — export your data (History → Export JSON) and free up space.`;
+}
+
+// Started from a routine and performed exercises its day lacks? Ask once
+// whether to fold them in. Either answer still saves the workout. Built-ins
+// live in code, so "yes" saves the user's own copy of the preset instead.
+function offerRoutineUpdate(finished) {
+  const routine = findRoutine(finished.routineId);
+  const added = routineAdditions(finished, routine);
+  if (!added.length) return;
+  const copyNote = routine.builtin ? '\n\nBuilt-in routines can’t be edited, so this saves your own copy under Your routines.' : '';
+  if (!confirm(routineUpdatePrompt(added.map(catalogName)) + copyNote)) return;
+  const base = routine.builtin
+    ? { ...routine, id: `r-${now().toString(36)}`, name: `${routine.name} (mine)`, builtin: false }
+    : routine;
+  if (!saveRoutine(addExercisesToRoutine(base, finished.routineDayKey, finished, added))) {
+    toast('Could not update the routine — storage is unavailable.');
+    return;
+  }
+  state.routines = loadRoutines();
+  toast(routine.builtin ? `Saved “${base.name}”` : 'Routine updated');
 }
 
 function cancelWorkout() {

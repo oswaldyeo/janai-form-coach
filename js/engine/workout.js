@@ -52,6 +52,9 @@ export function makeWorkout(partial = {}) {
     note: partial.note || '',
     routineId: partial.routineId || null,
     ...(partial.updatedAtMs != null ? { updatedAtMs: partial.updatedAtMs } : {}),
+    // Which routine day seeded this workout. Only routine starts set it (not
+    // repeat-last or the WOD), so it doubles as "started from a routine".
+    routineDayKey: partial.routineDayKey ?? null,
     exercises: (partial.exercises || []).map((e) => makeExerciseInstance(e.exerciseId, e.sets || [])),
   };
 }
@@ -343,6 +346,42 @@ export function seedSetsFromHistory(historyWorkouts, exerciseId) {
     side: s.side,
     completed: false,
   }));
+}
+
+/**
+ * Rows for an exercise added to a workout already in progress: one EMPTY,
+ * uncompleted row per set of the last session (any routine), so each row's
+ * placeholder shows that session's set and ✓ on an untouched row adopts it.
+ * Only set type and side carry over — they shape the row, they aren't data.
+ * Values stay blank so untouched rows never read as "typed" to the finish
+ * flow's discard check. First time ever: a single blank row. Pure.
+ */
+export function placeholderSetsFromHistory(historyWorkouts, exerciseId) {
+  const prev = previousSets(historyWorkouts, exerciseId);
+  if (!prev.length) return [makeSet({})];
+  return prev.map((s) => makeSet({ type: s.type, side: s.side }));
+}
+
+/**
+ * Distinct exercise ids from workout history, most recently performed first
+ * (by endedAtMs, else startedAtMs; within one workout, its exercise order).
+ * Only exercises with a completed set count. Pure.
+ */
+export function recentExerciseIds(historyWorkouts, { limit = 8 } = {}) {
+  const when = (w) => w.endedAtMs ?? w.startedAtMs ?? 0;
+  const sorted = (historyWorkouts || [])
+    .map((w, i) => ({ w, i }))
+    .sort((a, b) => (when(b.w) - when(a.w)) || (a.i - b.i))
+    .map((x) => x.w);
+  const ids = [];
+  for (const w of sorted) {
+    for (const ex of w.exercises || []) {
+      if (ids.length >= limit) return ids;
+      if (!ex.exerciseId || ids.includes(ex.exerciseId)) continue;
+      if ((ex.sets || []).some((s) => s.completed)) ids.push(ex.exerciseId);
+    }
+  }
+  return ids;
 }
 
 /**
