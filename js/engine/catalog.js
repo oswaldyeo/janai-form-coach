@@ -303,3 +303,20 @@ export function searchCatalog({ query = '', muscle = null, equipment = null } = 
     );
   });
 }
+
+/**
+ * Split picker results into recently-used exercises (in `recentIds` order,
+ * most recent first) and the rest (in their original order). Operates on
+ * whatever `searchCatalog` returned, so search and filters still span the
+ * whole catalog — recents only change the order. Pure.
+ */
+export function recentsFirst(entries, recentIds = []) {
+  const byId = new Map((entries || []).map((e) => [e.id, e]));
+  const recent = [];
+  for (const id of recentIds) {
+    const e = byId.get(id);
+    if (e && !recent.includes(e)) recent.push(e);
+  }
+  const rest = (entries || []).filter((e) => !recent.includes(e));
+  return { recent, rest };
+}

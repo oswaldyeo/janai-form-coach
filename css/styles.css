@@ -464,6 +464,11 @@ button.small { min-height: 40px; padding: 8px 12px; font-size: 13px; border-radi
 .pick-meta { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
 .pick-row .badge { flex: 0 0 auto; margin-left: 10px; }
 .pick-howto { flex: 0 0 auto; margin-right: 8px; }
+.pick-section { margin: 4px 0 8px; }
+.pick-section ~ .pick-section { margin-top: 14px; }
+/* an exercise just added mid-workout glows once so the eye lands on it */
+.ex-card2.just-added { animation: card-added 1.4s ease-out; }
+@keyframes card-added { from { box-shadow: 0 0 0 2px var(--mint); } to { box-shadow: 0 0 0 2px transparent; } }
 
 /* ── exercise how-to sheet ──────────────────────────────────────────────── */
 .modal-backdrop {
