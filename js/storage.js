@@ -26,6 +26,9 @@ const WORKOUTS_CORRUPT_KEY = 'janai.formcoach.workouts.v2.corrupt';
 // Cloud auth session (Supabase GoTrue tokens). Workouts themselves are never
 // stored here — only the signed-in identity that scopes cloud sync.
 const CLOUD_SESSION_KEY = 'janai.formcoach.cloud.v1';
+// Janai auto-sync pairing: { url, token, accountId, cursor, lastSyncMs, ... }.
+// The token is shown to the user once at signup and lives only here after that.
+const SYNC_KEY = 'janai.formcoach.sync.v1';
 
 const HISTORY_LIMIT = 200;
 const WORKOUT_LIMIT = 300;
@@ -163,6 +166,23 @@ function loadWorkoutsForWrite() {
     return null;
   }
   return [];
+}
+
+/**
+ * Replace a stored workout by id (an edit of a past workout), stamping
+ * updatedAtMs so the newer version wins on sync, and queue it for delivery.
+ * Unknown ids are prepended. Returns the saved record, or null if storage failed.
+ */
+export function updateWorkout(workout, now = Date.now) {
+  if (!workout || !workout.id) return null;
+  const saved = { ...workout, updatedAtMs: now() };
+  const all = loadWorkoutsForWrite();
+  if (!all) return null;
+  const idx = all.findIndex((w) => w && w.id === saved.id);
+  if (idx >= 0) all[idx] = saved; else all.unshift(saved);
+  if (!saveWorkouts(all)) return null;
+  queueForDelivery(saved, now);
+  return saved;
 }
 
 /** Insert one finished workout newest-first; replaces any copy with the same id. */
@@ -303,20 +323,37 @@ export function loadOutbox() {
   return Array.isArray(arr) ? arr : [];
 }
 
-function saveOutbox(arr) {
+export function saveOutbox(arr) {
   return setItem(OUTBOX_KEY, JSON.stringify((arr || []).slice(0, WORKOUT_LIMIT)));
 }
 
-/** Queue a finished workout for delivery (idempotent by id; keeps hand-off state). */
+/**
+ * Queue a finished workout for delivery (idempotent by id). A re-queue keeps
+ * the manual hand-off state but refreshes queuedAt and moves the entry to the
+ * front: the sync engine matches in-flight POSTs on {id, queuedAt}, so an edit
+ * made while the old version is being sent is never dropped.
+ */
 export function queueForDelivery(workout, now = Date.now) {
   if (!workout || !workout.id) return false;
   const all = loadOutbox();
   const prev = all.find((e) => e.id === workout.id);
   const out = all.filter((e) => e.id !== workout.id);
-  out.unshift(prev
-    ? { ...prev, endedAtMs: workout.endedAtMs ?? prev.endedAtMs ?? null }
-    : { id: workout.id, endedAtMs: workout.endedAtMs ?? null, queuedAt: now() });
+  out.unshift({
+    ...(prev || {}),
+    id: workout.id,
+    endedAtMs: workout.endedAtMs ?? (prev && prev.endedAtMs) ?? null,
+    queuedAt: now(),
+  });
   return saveOutbox(out);
+}
+
+/** Queue many workouts at once (e.g. a full upload when a device is first paired). */
+export function queueManyForDelivery(workouts, now = Date.now) {
+  const list = (workouts || []).filter((w) => w && w.id);
+  const ids = new Set(list.map((w) => w.id));
+  const t = now();
+  const fresh = list.map((w) => ({ id: w.id, endedAtMs: w.endedAtMs ?? null, queuedAt: t }));
+  return saveOutbox([...fresh, ...loadOutbox().filter((e) => !ids.has(e.id))]);
 }
 
 /** Record that these workouts were handed to the share sheet / downloaded. */
@@ -345,7 +382,7 @@ export function outboxStatus() {
   };
 }
 
-/** Mark a set of workout ids as received by Janai Health (remove them from the outbox). */
+/** Mark a set of workout ids as delivered/received (remove them from the outbox). */
 export function markDelivered(ids) {
   const set = new Set(ids || []);
   return saveOutbox(loadOutbox().filter((e) => !set.has(e.id)));
@@ -405,4 +442,22 @@ export function saveCloudSession(session) {
 
 export function clearCloudSession() {
   return removeItem(CLOUD_SESSION_KEY);
+}
+
+// ── Janai auto-sync pairing ──────────────────────────────────────────────────
+
+export function loadSyncConfig() {
+  const s = safeParse(getItem(SYNC_KEY), null);
+  return s && typeof s === 'object' && s.token && s.url ? s : null;
+}
+
+/** Shallow-merge a patch into the stored sync config. */
+export function saveSyncConfig(patch) {
+  const cur = safeParse(getItem(SYNC_KEY), null);
+  const merged = { ...(cur && typeof cur === 'object' ? cur : {}), ...patch };
+  return setItem(SYNC_KEY, JSON.stringify(merged)) ? merged : null;
+}
+
+export function clearSyncConfig() {
+  return removeItem(SYNC_KEY);
 }

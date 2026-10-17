@@ -24,6 +24,7 @@
     </div>
     <div class="head-right">
       <div class="pill" id="status">starting…</div>
+      <button class="pill sync-pill" id="sync-pill" data-state="unpaired" aria-label="Sync status">Not paired</button>
       <button class="icon-btn" id="btn-settings" aria-label="Settings">⚙︎</button>
     </div>
   </header>
@@ -80,7 +81,7 @@
 
       <div class="card privacy">
         <span class="dot">●</span>
-        <p><b>Private by design.</b> Camera and pose processing stay 100% on-device — no video, image, or pose landmark is ever uploaded. Your workout log also stays on this device unless you choose to share it: signing in backs it up to your private cloud account, and “Send to Janai Health” shares a finished workout.</p>
+        <p><b>Private by design.</b> Camera and pose processing stay 100% on-device — no video, image, or pose landmark is ever uploaded. Your workout log also stays on this device unless you opt in: pairing Janai auto-sync saves each finished workout to your private sync server automatically, signing in backs it up to your private cloud account, and “Send to Janai Health” shares a finished workout. Camera and pose data never sync.</p>
       </div>
 
       <div id="install-banner" class="card install-card hidden" role="status">
@@ -297,6 +298,32 @@
         <div class="muted" id="cloud-msg" style="margin-top:6px" role="status" aria-live="polite"></div>
       </div>
       <div class="set-field" style="margin-top:14px">
+        <label>Janai auto-sync</label>
+        <div id="sync-unpaired">
+          <div class="muted" style="margin-bottom:8px">Saves every finished or edited workout to your private Janai sync server in the background — no share sheet — and restores your history if this device is wiped. Workout log only; camera &amp; pose never leave the device.</div>
+          <input id="sync-url" type="url" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="https://janai-formcoach-sync.…workers.dev" />
+          <input id="sync-invite" type="password" autocomplete="off" placeholder="invite code" style="margin-top:8px" />
+          <button class="primary wide" id="btn-sync-signup" style="margin-top:8px">Create sync account</button>
+          <div class="muted tiny" style="margin:12px 0 6px">Already have a sync token (another device, or restoring after a wipe)?</div>
+          <input id="sync-token-input" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="paste sync token" />
+          <button class="ghost wide" id="btn-sync-pair" style="margin-top:8px">Pair this device</button>
+        </div>
+        <div id="sync-token-once" hidden>
+          <div class="muted" style="margin:8px 0">Your sync token — <b>shown once</b>. Save it in your password manager: you need it to pair another device or restore after a wipe.</div>
+          <input id="sync-token-shown" type="text" readonly autocomplete="off" spellcheck="false" />
+          <div class="row-2" style="margin-top:8px">
+            <button class="ghost" id="btn-sync-copy">Copy</button>
+            <button class="primary" id="btn-sync-token-done">I’ve saved it</button>
+          </div>
+        </div>
+        <div id="sync-paired" hidden>
+          <div class="muted" id="sync-detail"></div>
+          <button class="ghost wide" id="btn-sync-now" style="margin-top:8px">Sync now</button>
+          <button class="ghost wide" id="btn-sync-unpair" style="margin-top:8px">Unpair this device</button>
+        </div>
+        <div class="muted" id="sync-msg" style="margin-top:6px" role="status" aria-live="polite"></div>
+      </div>
+      <div class="set-field" style="margin-top:14px">
         <label>Data</label>
         <button class="ghost wide" id="btn-export-data">Export backup (JSON)</button>
         <button class="ghost wide" id="btn-import-data" style="margin-top:8px">Import backup / Hevy file</button>
@@ -315,6 +342,6 @@
 
 </div>
 
-<script type="module" src="./js/app.js?v=29"></script>
+<script type="module" src="./js/app.js?v=30"></script>
 </body>
 </html>

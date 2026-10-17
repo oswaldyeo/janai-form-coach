@@ -1,0 +1,16 @@
+# Cloudflare Worker config for the Form Coach sync backend.
+# Fill database_id after `wrangler d1 create janai-formcoach-sync` (see REPORT.md).
+# SIGNUP_CODE is a secret: `wrangler secret put SIGNUP_CODE` — never commit it.
+name = "janai-formcoach-sync"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+
+[vars]
+# Comma-separated browser origins allowed to call the API (CORS). The Mac
+# puller uses curl/Python, so it is unaffected by this list.
+ALLOWED_ORIGINS = "https://oswaldyeo.github.io"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "janai-formcoach-sync"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"

@@ -2,9 +2,12 @@
   "name": "janai-form-coach",
   "private": true,
   "type": "module",
-  "description": "Local-first strength tracker PWA. No build step, no runtime dependencies.",
+  "description": "Local-first strength tracker PWA with an optional camera form coach. No build step, no runtime dependencies.",
   "scripts": {
-    "test": "node --test \"test/**/*.test.js\"",
+    "test": "node --test \"test/**/*.test.js\" \"sync/**/*.test.mjs\"",
     "serve": "python3 -m http.server 8765"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

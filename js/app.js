@@ -14,7 +14,7 @@ import {
 import { RepEngine } from './engine/rep-engine.js';
 import { calibrate } from './engine/calibration.js';
 import { SessionRecorder, toWorkoutExportDocument } from './engine/session.js';
-import { buildDeliveryDocument, deliveryFilename } from './engine/delivery.js';
+import { buildDeliveryDocument, deliveryFilename, enrichWorkoutForDelivery } from './engine/delivery.js';
 import {
   makeWorkout, addExercise, removeExercise, reorderExercise, addSet, removeSet, reorderSet, updateSet,
   workoutVolume, completedSetCount, totalReps, workoutDurationSec,
@@ -36,9 +36,14 @@ import {
   persistActiveWorkout, clearActiveWorkout, resolveActiveOnBoot, commitFinishedWorkout,
   markDelivered, markHandedOff, pendingWorkouts, outboxStatus, storageHealth, onStorageError,
   loadHistory, loadCloudSession, saveCloudSession, clearCloudSession,
+  updateWorkout, saveOutbox, queueManyForDelivery, loadSyncConfig, saveSyncConfig, clearSyncConfig,
 } from './storage.js';
 import { exportBundle, parseBundle, mergeWorkouts } from './engine/backup.js';
 import { signUp, signInWithPassword, refreshSession, pullWorkouts, pushWorkouts, sessionNeedsRefresh, mapAuthError } from './engine/cloud.js';
+import {
+  SYNC_DEFAULTS, makeSyncClient, normalizeSyncUrl, drainOutbox, applySyncResults, nextRetryAt,
+  pullAll, mergeRemote, syncStatus,
+} from './engine/sync.js';
 
 const $ = (id) => document.getElementById(id);
 const now = () => Date.now();
@@ -342,7 +347,8 @@ function renderHistory() {
       .map((e) => `<button class="lift-link" data-exdetail="${esc(e.exerciseId)}">${esc(catalogName(e.exerciseId))}</button>`)
       .join('<span class="muted"> · </span>');
     return `<div class="wcard">
-      <div class="head-row"><b>${esc(w.title)}</b><span class="muted">${fmtDate(w.startedAtMs)}</span></div>
+      <div class="head-row"><b>${esc(w.title)}</b><span class="muted">${fmtDate(w.startedAtMs)} <button class="ghost small" data-editw="${esc(w.id)}" aria-label="Edit workout">Edit</button></span></div>
+      ${w.note ? `<div class="muted tiny">${esc(w.note)}</div>` : ''}
       <div class="tiny" style="margin:4px 0">${lifts}</div>
       <div class="wstats">
         <span>${completedSetCount(w)} sets</span><span>${totalReps(w)} reps</span>
@@ -352,6 +358,28 @@ function renderHistory() {
   }).join('');
   list.querySelectorAll('[data-exdetail]').forEach((b) =>
     b.addEventListener('click', () => openExerciseDetail(b.dataset.exdetail)));
+  list.querySelectorAll('[data-editw]').forEach((b) =>
+    b.addEventListener('click', () => editPastWorkout(b.dataset.editw)));
+}
+
+// Minimal edit of a finished workout (title + note). Every edit path should go
+// through saveEditedWorkout so the change is stamped and auto-synced.
+function editPastWorkout(id) {
+  const w = state.history.find((x) => x.id === id);
+  if (!w) return;
+  const title = prompt('Workout title', w.title || 'Workout');
+  if (title == null) return;
+  const note = prompt('Note (optional)', w.note || '');
+  if (note == null) return;
+  if (title.trim() === (w.title || '') && note === (w.note || '')) return;
+  saveEditedWorkout({ ...w, title: title.trim() || w.title, note });
+}
+
+function saveEditedWorkout(workout) {
+  if (!updateWorkout(workout, now)) { alert('Could not save the edit — storage is unavailable.'); return; }
+  refreshAll();
+  refreshPendingBanner();
+  autoSync('edit');
 }
 
 // Set of exercise ids that appear anywhere in logged history (for "Progress" affordances).
@@ -988,6 +1016,7 @@ function finishWorkout() {
   }
   const finished = pruneIncompleteSets(w);
   finished.endedAtMs = now();
+  finished.updatedAtMs = finished.endedAtMs;
   const prs = newPRsInWorkout(finished, state.history);
   const res = commitFinishedWorkout(finished, now);
   if (!res.ok) {
@@ -1000,6 +1029,7 @@ function finishWorkout() {
   if (state.wTimer) { clearInterval(state.wTimer); state.wTimer = null; }
   state.workout = null;
   cloudSync('auto');               // fire-and-forget; offline just skips
+  autoSync('finish');              // background POST from the outbox; retries on failure
   afterHistoryWrite();
   showSummary(finished, prs);
   if (!res.queued) toast('Saved — but it could not be added to the Janai Health outbox (storage full).');
@@ -1071,6 +1101,7 @@ function showSummary(workout, prs) {
         `<div class="sum-row"><span>${esc(catalogName(p.exerciseId))}</span><b>${p.kinds.join(' · ')}</b></div>`).join('')}</div>`
     : '';
   prHost.innerHTML = prCards + extras;
+  $('btn-summary-send').hidden = !!loadSyncConfig(); // paired ⇒ delivery is automatic
   showScreen('screen-summary');
 }
 
@@ -1488,9 +1519,14 @@ function openSettings() {
   $('set-autorest').checked = !!s.autoStartRest;
   renderCloudSection();
   cloudMsg('');
+  renderSyncSection();
+  syncMsg('');
   show($('screen-settings'), true);
 }
-function closeSettings() { show($('screen-settings'), false); }
+function closeSettings() {
+  hideSyncToken();
+  show($('screen-settings'), false);
+}
 
 function wireSettings() {
   $('seg-units').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
@@ -1576,6 +1612,196 @@ function exportJSON() {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// ── Janai auto-sync (sync/worker.js) ─────────────────────────────────────────
+// Finished and edited workouts are queued in the outbox and POSTed in the
+// background; boot pulls everything changed since the stored cursor and merges
+// it in, so a wiped localStorage re-hydrates from the server. Triggers: boot,
+// finish, edit, pairing, coming back online / to the foreground, and a
+// backoff-scheduled retry. Only the sanitised workout log is ever sent.
+
+const FULL_PULL_EVERY_MS = 24 * 60 * 60 * 1000;
+const sync = { busy: false, again: false, timer: null, authFailed: false };
+
+function syncMsg(text) { const el = $('sync-msg'); if (el) el.textContent = text || ''; }
+const isOnline = () => typeof navigator === 'undefined' || navigator.onLine !== false;
+
+function renderSyncStatus() {
+  const cfg = loadSyncConfig();
+  const st = syncStatus({
+    paired: !!cfg, online: isOnline(), pending: cfg ? loadOutbox().length : 0,
+    busy: sync.busy, authFailed: sync.authFailed,
+  });
+  const pill = $('sync-pill');
+  if (pill) { pill.textContent = st.label; pill.dataset.state = st.state; pill.title = `Janai sync: ${st.label}`; }
+  const detail = $('sync-detail');
+  if (detail && cfg) {
+    const when = cfg.lastSyncMs ? new Date(cfg.lastSyncMs).toLocaleString() : 'never';
+    detail.textContent = `${st.label} · ${cfg.url.replace(/^https?:\/\//, '')} · last sync ${when}`;
+  }
+}
+
+function renderSyncSection() {
+  const cfg = loadSyncConfig();
+  const un = $('sync-unpaired'); const on = $('sync-paired');
+  if (!un || !on) return;
+  un.hidden = !!cfg;
+  on.hidden = !cfg;
+  if (!cfg && !$('sync-url').value) $('sync-url').value = SYNC_DEFAULTS.url || '';
+  renderSyncStatus();
+}
+
+function hideSyncToken() {
+  const box = $('sync-token-once');
+  if (box) box.hidden = true;
+  const out = $('sync-token-shown');
+  if (out) out.value = '';
+}
+
+function scheduleSyncRetry() {
+  if (sync.timer) { clearTimeout(sync.timer); sync.timer = null; }
+  if (!loadSyncConfig()) return;
+  const at = nextRetryAt(loadOutbox());
+  if (at == null) return;
+  sync.timer = setTimeout(() => autoSync('retry'), Math.max(1000, at - now()));
+}
+
+function syncPrepare(w) {
+  return enrichWorkoutForDelivery(w, deliveryResolver); // names + muscles for the Mac puller
+}
+
+async function autoSync(reason = 'auto') {
+  const cfg = loadSyncConfig();
+  if (!cfg) { renderSyncStatus(); return; }
+  if (!isOnline()) { renderSyncStatus(); return; } // the 'online' event retriggers
+  if (sync.busy) { sync.again = true; return; }
+  sync.busy = true;
+  renderSyncStatus();
+  const client = makeSyncClient({ url: cfg.url, token: cfg.token });
+  try {
+    // 1) push — local changes first, so a pending edit can't be overwritten by the pull
+    const res = await drainOutbox({
+      outbox: loadOutbox(), workouts: loadWorkouts(), post: client.postWorkouts, nowMs: now(), prepare: syncPrepare,
+    });
+    saveOutbox(applySyncResults(loadOutbox(), res, now()));
+    if (res.dropped.length) console.warn('[sync] dropped from outbox (not stored locally or rejected):', res.dropped.map((d) => d.id));
+    if (res.error) throw res.error;
+
+    // 2) pull-merge — incremental from the cursor; full when the store looks wiped or daily
+    const full = !cfg.cursor || !loadWorkouts().length || now() - (cfg.lastFullPullMs || 0) > FULL_PULL_EVERY_MS;
+    const pulled = await pullAll({ get: client.getWorkouts, since: full ? 0 : cfg.cursor });
+    const pendingIds = new Set(loadOutbox().map((e) => e.id));
+    const { workouts, added, updated } = mergeRemote(loadWorkouts(), pulled.workouts, { pendingIds });
+    if (added || updated) { saveWorkouts(workouts); refreshAll(); }
+    saveSyncConfig({
+      cursor: pulled.cursor, lastSyncMs: now(), lastError: null,
+      ...(full ? { lastFullPullMs: now() } : {}),
+    });
+    sync.authFailed = false;
+    if (reason !== 'boot' && reason !== 'retry' && (added || updated)) {
+      toast(`Synced — ${added ? `${added} restored` : ''}${added && updated ? ', ' : ''}${updated ? `${updated} updated` : ''}.`);
+    }
+    if (reason === 'manual' || reason === 'pair') syncMsg('Synced — every workout is backed up.');
+  } catch (err) {
+    sync.authFailed = err && (err.status === 401 || err.status === 403);
+    saveSyncConfig({ lastError: (err && err.message) || 'sync failed' });
+    console.log('[sync] failed:', reason, err && err.status, err && err.message);
+    if (reason === 'manual' || reason === 'pair') {
+      syncMsg(sync.authFailed ? 'The server rejected this device’s token — unpair and pair again.' : `Sync failed (${err.message}) — will retry automatically.`);
+    }
+  } finally {
+    sync.busy = false;
+    scheduleSyncRetry();
+    refreshPendingBanner();
+    renderSyncStatus();
+    if (sync.again) { sync.again = false; autoSync('again'); }
+  }
+}
+
+function setSyncBusy(busy) {
+  ['btn-sync-signup', 'btn-sync-pair'].forEach((id) => { const b = $(id); if (b) b.disabled = busy; });
+}
+
+// Store the pairing, upload the whole local log once (the server dedupes by
+// id), then sync — which also pulls anything another device already sent.
+function completePairing(url, token, accountId = null) {
+  saveSyncConfig({ url, token, accountId, cursor: 0, lastFullPullMs: 0, pairedAtMs: now(), lastError: null });
+  sync.authFailed = false;
+  queueManyForDelivery(loadWorkouts(), now);
+  renderSyncSection();
+  refreshPendingBanner();
+  autoSync('pair');
+}
+
+async function syncSignup() {
+  const url = normalizeSyncUrl($('sync-url').value);
+  if (!url) { syncMsg('Enter the sync server address (https://…).'); return; }
+  const code = $('sync-invite').value.trim();
+  if (!code) { syncMsg('Enter the invite code.'); return; }
+  setSyncBusy(true);
+  syncMsg('Creating sync account…');
+  try {
+    const { token, accountId } = await makeSyncClient({ url }).signup(code);
+    $('sync-invite').value = '';
+    completePairing(url, token, accountId);
+    // shown once: the only way to pair another device or restore after a wipe
+    $('sync-token-shown').value = token;
+    $('sync-token-once').hidden = false;
+    syncMsg('Paired — save the token below, then tap “I’ve saved it”.');
+  } catch (err) {
+    console.log('[sync] signup failed:', err.status, err.message);
+    syncMsg(err.status === 403 ? 'That invite code wasn’t accepted.' : mapAuthError(err));
+  } finally {
+    setSyncBusy(false);
+  }
+}
+
+async function syncPair() {
+  const url = normalizeSyncUrl($('sync-url').value);
+  if (!url) { syncMsg('Enter the sync server address (https://…).'); return; }
+  const token = $('sync-token-input').value.trim();
+  if (!token) { syncMsg('Paste your sync token.'); return; }
+  setSyncBusy(true);
+  syncMsg('Checking token…');
+  try {
+    await makeSyncClient({ url, token }).getWorkouts(0, 1); // auth check
+    $('sync-token-input').value = '';
+    completePairing(url, token);
+    syncMsg('Paired — restoring and backing up your workouts…');
+  } catch (err) {
+    console.log('[sync] pair failed:', err.status, err.message);
+    syncMsg(err.status === 401 ? 'That token wasn’t accepted by the server.' : mapAuthError(err));
+  } finally {
+    setSyncBusy(false);
+  }
+}
+
+function wireSync() {
+  $('btn-sync-signup').addEventListener('click', syncSignup);
+  $('btn-sync-pair').addEventListener('click', syncPair);
+  $('btn-sync-now').addEventListener('click', () => { syncMsg('Syncing…'); autoSync('manual'); });
+  $('btn-sync-copy').addEventListener('click', async () => {
+    const t = $('sync-token-shown').value;
+    try { await navigator.clipboard.writeText(t); syncMsg('Token copied.'); } catch { $('sync-token-shown').select(); }
+  });
+  $('btn-sync-token-done').addEventListener('click', () => { hideSyncToken(); syncMsg(''); });
+  $('btn-sync-unpair').addEventListener('click', () => {
+    if (!confirm('Unpair this device? Workouts stay on this device; auto-sync stops until you pair again.')) return;
+    clearSyncConfig();
+    if (sync.timer) { clearTimeout(sync.timer); sync.timer = null; }
+    sync.authFailed = false;
+    hideSyncToken();
+    renderSyncSection();
+    refreshPendingBanner();
+    syncMsg('Unpaired. Your data stays on this device.');
+  });
+  $('sync-pill').addEventListener('click', openSettings);
+  window.addEventListener('online', () => autoSync('online'));
+  window.addEventListener('offline', renderSyncStatus);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') autoSync('resume');
+  });
+}
+
 // ── delivery to Janai Health ─────────────────────────────────────────────────
 // No unauthenticated public write endpoint exists (and none should — this is
 // Os-only health data), so delivery is a local, authenticated hop: the PWA
@@ -1645,14 +1871,17 @@ function refreshPendingBanner() {
   const st = outboxStatus();
   const n = st.total;
   const btn = $('btn-send-pending');
+  const paired = !!loadSyncConfig();
   if (btn) {
-    btn.hidden = n === 0;
+    // While paired, delivery is automatic — the sync pill owns the status.
+    btn.hidden = n === 0 || paired;
     btn.textContent = n > 1 ? `Send ${n} pending 🏋️` : 'Send pending 🏋️';
   }
+  renderSyncStatus();
   const card = $('outbox-card');
   if (!card) return;
-  show(card, n > 0);
-  if (!n) return;
+  show(card, n > 0 && !paired);
+  if (!n || paired) return;
   $('outbox-count').textContent = String(n);
   $('outbox-label').textContent = n === 1 ? 'workout not delivered to Janai Health' : 'workouts not delivered to Janai Health';
   const bits = [];
@@ -1760,6 +1989,7 @@ function wireEvents() {
   $('btn-settings-close').addEventListener('click', closeSettings);
   wireSettings();
   wireCloud();
+  wireSync();
 
   const inst = $('btn-install');
   if (inst) inst.addEventListener('click', async () => {
@@ -1888,6 +2118,9 @@ function boot() {
 
   // signed in? pull/push in the background — offline or signed-out is a no-op
   cloudSync('boot');
+  // paired? push the outbox, then pull-merge (re-hydrates a wiped store)
+  refreshPendingBanner();
+  autoSync('boot');
 
   window.__formCoachReady = true;
   document.body.dataset.ready = 'true';
