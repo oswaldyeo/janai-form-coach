@@ -94,8 +94,12 @@ It works under a **GitHub Pages subpath** because every URL is relative.
 ## Test
 
 ```bash
-npm test               # node --test — 233 tests, no framework
+npm test               # node --test — no framework
 ```
+
+The sync worker tests (`sync/worker.test.mjs`) run the real `sync/schema.sql`
+against an in-memory SQLite via `node:sqlite`, so they need **Node 22+**; on
+older Node they are skipped and the client-side sync tests in `test/` still run.
 
 The suite covers the pure engine: geometry, the rep state machine, per-exercise
 calibration, the session/export schema, **catalog integrity**, the **workout
@@ -210,6 +214,22 @@ pure, tested `mapAuthError()`; raw errors go to the console. localStorage
 remains the source of truth — sync pulls, merges by workout id (local wins),
 and pushes back, so it never clobbers on-device history. Camera frames and
 pose landmarks are never part of any sync.
+
+### Janai auto-sync (opt-in, zero-tap)
+
+Settings → *Janai auto-sync* pairs the device with the owner's Cloudflare
+Worker + D1 backend in [`sync/`](sync/) (create an account with an invite code
+— the device token is **shown once** and kept in localStorage — or paste an
+existing token). Once paired, every finished **or edited** workout is queued in
+the outbox and POSTed in the background (batched, deduped by workout id,
+exponential backoff with jitter, offline-safe — it resumes on `online` and when
+the app returns to the foreground). Boot pulls everything changed since the
+last server cursor (`GET /workouts?since=`) and merges it in, so a wiped
+localStorage re-hydrates from the server. A pending local edit always wins over
+the pull. The header pill shows *Synced ✓ / Pending N / Offline / Not paired*.
+Payloads are the workout log only: `js/engine/sync.js` strips per-set camera
+blobs and any landmark/frame/video keys before sending, and the Worker strips
+them again before storing. See [`REPORT.md`](REPORT.md) for deployment.
 
 ### PWA & offline
 

@@ -539,3 +539,11 @@ button.small { min-height: 40px; padding: 8px 12px; font-size: 13px; border-radi
 }
 .lift-link:active { color: var(--mint); }
 .pick-progress { white-space: nowrap; }
+
+/* Janai auto-sync status pill (header) */
+.sync-pill { border: 0; font: inherit; cursor: pointer; }
+.sync-pill[data-state="synced"] { color: #7fe0a8; }
+.sync-pill[data-state="pending"], .sync-pill[data-state="syncing"] { color: var(--warn); }
+.sync-pill[data-state="offline"] { color: var(--muted); }
+.sync-pill[data-state="error"] { color: var(--bad); }
+.sync-pill[data-state="unpaired"] { color: var(--muted); opacity: .8; }

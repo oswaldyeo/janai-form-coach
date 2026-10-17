@@ -22,6 +22,9 @@ const OUTBOX_KEY = 'janai.formcoach.outbox.v1';
 // Cloud auth session (Supabase GoTrue tokens). Workouts themselves are never
 // stored here — only the signed-in identity that scopes cloud sync.
 const CLOUD_SESSION_KEY = 'janai.formcoach.cloud.v1';
+// Janai auto-sync pairing: { url, token, accountId, cursor, lastSyncMs, ... }.
+// The token is shown to the user once at signup and lives only here after that.
+const SYNC_KEY = 'janai.formcoach.sync.v1';
 
 const HISTORY_LIMIT = 200;
 const WORKOUT_LIMIT = 300;
@@ -84,6 +87,22 @@ export function loadWorkouts() {
 export function saveWorkouts(workouts) {
   const arr = Array.isArray(workouts) ? workouts.slice(0, WORKOUT_LIMIT) : [];
   return setItem(WORKOUTS_KEY, JSON.stringify(arr));
+}
+
+/**
+ * Replace a stored workout by id (an edit of a past workout), stamping
+ * updatedAtMs so the newer version wins on sync, and queue it for delivery.
+ * Unknown ids are prepended. Returns the saved record, or null if storage failed.
+ */
+export function updateWorkout(workout, now = Date.now) {
+  if (!workout || !workout.id) return null;
+  const saved = { ...workout, updatedAtMs: now() };
+  const all = loadWorkouts();
+  const idx = all.findIndex((w) => w && w.id === saved.id);
+  if (idx >= 0) all[idx] = saved; else all.unshift(saved);
+  if (!saveWorkouts(all)) return null;
+  queueForDelivery(saved, now);
+  return saved;
 }
 
 /** Prepend one finished workout (newest-first). */
@@ -154,7 +173,7 @@ export function loadOutbox() {
   return Array.isArray(arr) ? arr : [];
 }
 
-function saveOutbox(arr) {
+export function saveOutbox(arr) {
   return setItem(OUTBOX_KEY, JSON.stringify((arr || []).slice(0, WORKOUT_LIMIT)));
 }
 
@@ -164,6 +183,15 @@ export function queueForDelivery(workout, now = Date.now) {
   const out = loadOutbox().filter((e) => e.id !== workout.id);
   out.unshift({ id: workout.id, endedAtMs: workout.endedAtMs ?? null, queuedAt: now() });
   return saveOutbox(out);
+}
+
+/** Queue many workouts at once (e.g. a full upload when a device is first paired). */
+export function queueManyForDelivery(workouts, now = Date.now) {
+  const list = (workouts || []).filter((w) => w && w.id);
+  const ids = new Set(list.map((w) => w.id));
+  const t = now();
+  const fresh = list.map((w) => ({ id: w.id, endedAtMs: w.endedAtMs ?? null, queuedAt: t }));
+  return saveOutbox([...fresh, ...loadOutbox().filter((e) => !ids.has(e.id))]);
 }
 
 /** Mark a set of workout ids as delivered (remove them from the outbox). */
@@ -223,4 +251,22 @@ export function saveCloudSession(session) {
 
 export function clearCloudSession() {
   return removeItem(CLOUD_SESSION_KEY);
+}
+
+// ── Janai auto-sync pairing ──────────────────────────────────────────────────
+
+export function loadSyncConfig() {
+  const s = safeParse(getItem(SYNC_KEY), null);
+  return s && typeof s === 'object' && s.token && s.url ? s : null;
+}
+
+/** Shallow-merge a patch into the stored sync config. */
+export function saveSyncConfig(patch) {
+  const cur = safeParse(getItem(SYNC_KEY), null);
+  const merged = { ...(cur && typeof cur === 'object' ? cur : {}), ...patch };
+  return setItem(SYNC_KEY, JSON.stringify(merged)) ? merged : null;
+}
+
+export function clearSyncConfig() {
+  return removeItem(SYNC_KEY);
 }

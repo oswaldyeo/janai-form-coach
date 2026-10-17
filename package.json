@@ -1,0 +1,12 @@
+{
+  "name": "janai-form-coach",
+  "private": true,
+  "type": "module",
+  "description": "On-device strength tracker with an optional camera form coach.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
